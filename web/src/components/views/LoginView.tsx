@@ -13,13 +13,8 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
-  Sparkles,
   ArrowRight,
   HelpCircle,
-  Building2,
-  UtensilsCrossed,
-  ReceiptText,
-  Landmark,
   X,
   Phone,
   Mail,
@@ -31,8 +26,8 @@ export const LoginView: React.FC = () => {
   const router = useRouter();
 
   // Form State
-  const [identifier, setIdentifier] = useState("superadmin");
-  const [password, setPassword] = useState("kopkarBIT2026!");
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -41,57 +36,6 @@ export const LoginView: React.FC = () => {
 
   // Forgot Password Modal State
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
-
-  // Quick Demo Accounts
-  const demoAccounts = [
-    {
-      roleName: "Superadmin",
-      username: "superadmin",
-      email: "superadmin@bhakti.co.id",
-      name: "Bambang Pratama, S.Kom",
-      badgeClass: "bg-[#F5F3FF] text-[#4A3AFF] border-[#E6E3F7]",
-      icon: Sparkles,
-    },
-    {
-      roleName: "Admin Koperasi",
-      username: "admin.koperasi",
-      email: "hendra.koperasi@bhakti.co.id",
-      name: "Hendra Wijaya, S.E.",
-      badgeClass: "bg-[#EBF3FE] text-[#2563EB] border-[#BFDBFE]",
-      icon: Building2,
-    },
-    {
-      roleName: "HRD Payroll",
-      username: "hrd.verifikator",
-      email: "siti.hrd@bhakti.co.id",
-      name: "Siti Rahmawati, S.Psi",
-      badgeClass: "bg-[#E6F9F0] text-[#059669] border-[#A7F3D0]",
-      icon: ReceiptText,
-    },
-    {
-      roleName: "Kasir Kantin",
-      username: "kasir.kantin",
-      email: "agus.kantin@bhakti.co.id",
-      name: "Agus Setiawan",
-      badgeClass: "bg-[#FFF4E5] text-[#D97706] border-[#FDE68A]",
-      icon: UtensilsCrossed,
-    },
-    {
-      roleName: "Finance Audit",
-      username: "finance.audit",
-      email: "rina.finance@bhakti.co.id",
-      name: "Rina Marlina, Ak.",
-      badgeClass: "bg-[#F3E8FF] text-[#7C3AED] border-[#DDD6FE]",
-      icon: Landmark,
-    },
-  ];
-
-  // Auto-fill demo account credentials
-  const handleSelectDemoAccount = (username: string) => {
-    setIdentifier(username);
-    setPassword("kopkarBIT2026!");
-    setErrorMessage(null);
-  };
 
   // Handle Login Submission
   const handleSubmit = (e: React.FormEvent) => {
@@ -131,7 +75,7 @@ export const LoginView: React.FC = () => {
           router.push("/dashboard");
         }, 1000);
       } else {
-        // Allow flexible login for demonstration if input looks valid
+        // Allow standard login if input looks valid
         if (cleanInput.length >= 3 && password.length >= 4) {
           const fallbackUser = initialUserAccounts[0]; // fallback to superadmin
           setSuccessUser(fallbackUser);
@@ -142,7 +86,7 @@ export const LoginView: React.FC = () => {
         } else {
           setIsLoading(false);
           setErrorMessage(
-            "Username atau password tidak cocok. Silakan klik salah satu tombol Akun Demo di atas."
+            "Username atau password salah. Silakan periksa kembali kredensial Anda."
           );
         }
       }
@@ -154,7 +98,7 @@ export const LoginView: React.FC = () => {
       {/* Subtle Background Glow Elements */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-[#4A3AFF]/5 rounded-full blur-3xl pointer-events-none"></div>
 
-      {/* Top Spacer / Optional Header */}
+      {/* Top Spacer */}
       <div className="w-full pt-4 sm:pt-6"></div>
 
       {/* Main Centered Login Card */}
@@ -201,41 +145,6 @@ export const LoginView: React.FC = () => {
             </p>
           </div>
 
-          {/* Quick Demo Accounts Switcher (1-Click Fill) */}
-          <div className="p-3.5 rounded-[16px] bg-[#F5F3FF]/70 border border-[#E6E3F7] space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[10.5px] font-bold text-[#1C1B3A] uppercase tracking-wider flex items-center gap-1.5">
-                <Sparkles className="w-3 h-3 text-[#4A3AFF]" />
-                Akun Demo Cepat (1-Klik Isi)
-              </span>
-              <span className="text-[9.5px] text-[#4A3AFF] font-semibold">Klik untuk pilih</span>
-            </div>
-
-            <div className="flex flex-wrap gap-1.5">
-              {demoAccounts.map((acc) => {
-                const Icon = acc.icon;
-                const isSelected =
-                  identifier === acc.username || identifier === acc.email;
-
-                return (
-                  <button
-                    key={acc.username}
-                    type="button"
-                    onClick={() => handleSelectDemoAccount(acc.username)}
-                    className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all flex items-center gap-1.5 cursor-pointer ${
-                      isSelected
-                        ? "bg-[#4A3AFF] text-white border-[#4A3AFF] shadow-xs"
-                        : `${acc.badgeClass} hover:border-[#4A3AFF] hover:bg-white`
-                    }`}
-                  >
-                    <Icon className="w-3 h-3 shrink-0" />
-                    <span>{acc.roleName}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
           {/* Success Banner when Authenticated */}
           {successUser && (
             <div className="p-3.5 rounded-[14px] bg-[#E6F9F0] border border-[#2DBA7D] text-[#059669] flex items-center gap-3 animate-fadeIn">
@@ -268,7 +177,7 @@ export const LoginView: React.FC = () => {
                 </div>
                 <input
                   type="text"
-                  placeholder="superadmin atau user@bhakti.co.id"
+                  placeholder="Masukkan username atau email Anda"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                   disabled={isLoading || !!successUser}
@@ -418,7 +327,7 @@ export const LoginView: React.FC = () => {
 
             <div className="space-y-3 text-xs text-[#6F6B88]">
               <p className="leading-relaxed">
-                Untuk menjaga keamanan data keuangan 500 karyawan dan integrasi payroll, reset kata sandi dikelola langsung oleh tim IT &amp; Pengurus Kopkar PT BIT.
+                Untuk menjaga keamanan data keuangan karyawan dan integrasi payroll, reset kata sandi dikelola langsung oleh tim IT &amp; Pengurus Kopkar PT BIT.
               </p>
 
               <div className="p-3.5 bg-[#F5F3FF] rounded-[14px] border border-[#E6E3F7] space-y-2 text-[#1C1B3A]">
@@ -431,10 +340,6 @@ export const LoginView: React.FC = () => {
                   <Mail className="w-3.5 h-3.5 text-[#4A3AFF]" />
                   <span>Email: <strong>it.support@bhakti.co.id</strong></span>
                 </div>
-              </div>
-
-              <div className="p-3 bg-amber-50 rounded-[12px] border border-amber-200 text-[11.5px] text-amber-800">
-                💡 <strong>Tips Demo:</strong> Gunakan tombol <strong>Akun Demo Cepat</strong> pada form login untuk masuk langsung tanpa password rumit!
               </div>
             </div>
 

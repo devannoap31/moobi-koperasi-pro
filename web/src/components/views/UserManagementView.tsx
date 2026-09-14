@@ -13,13 +13,7 @@ import {
   User,
   Building2,
   CheckCircle2,
-  XCircle,
   AlertTriangle,
-  Lock,
-  Unlock,
-  Eye,
-  Check,
-  X,
   Sparkles,
   LayoutDashboard,
   Users,
@@ -30,6 +24,7 @@ import {
   Shield,
   Loader2,
   Info,
+  X,
 } from "lucide-react";
 import { initialUserAccounts, SYSTEM_MODULE_LIST, SystemModuleConfig } from "@/data/mockData";
 import { UserAccount, UserRole, SystemModuleKey, ModuleAccessLevel } from "@/types";
@@ -206,7 +201,6 @@ export const UserManagementView: React.FC = () => {
       return;
     }
 
-    // Check duplicate username or email
     const usernameClean = formData.username.toLowerCase().trim().replace(/[^a-z0-9._-]/g, "");
     const emailClean = formData.email.toLowerCase().trim();
 
@@ -257,7 +251,6 @@ export const UserManagementView: React.FC = () => {
     const usernameClean = formData.username.toLowerCase().trim().replace(/[^a-z0-9._-]/g, "");
     const emailClean = formData.email.toLowerCase().trim();
 
-    // Check duplicate username if changed
     if (
       usernameClean !== selectedUser.username.toLowerCase() &&
       users.some((u) => u.username.toLowerCase() === usernameClean)
@@ -305,7 +298,6 @@ export const UserManagementView: React.FC = () => {
   const handleApplyPresetInModal = (level: ModuleAccessLevel) => {
     const updated = {} as Record<SystemModuleKey, ModuleAccessLevel>;
     SYSTEM_MODULE_LIST.forEach((m) => {
-      // Keep user_management NONE unless superadmin
       if (m.key === "user_management" && selectedUser?.role !== "SUPER_ADMIN" && level === "FULL") {
         updated[m.key] = "NONE";
       } else {
@@ -633,7 +625,6 @@ export const UserManagementView: React.FC = () => {
                 </tr>
               ) : (
                 filteredUsers.map((user) => {
-                  // Count full vs read access
                   const fullCount = Object.values(user.permissions).filter((p) => p === "FULL").length;
                   const readCount = Object.values(user.permissions).filter((p) => p === "READ").length;
 

@@ -72,7 +72,7 @@ export interface LoanApplication {
   bankPartnerName?: string;
 }
 
-export type ProductCategory = "MAKANAN" | "MINUMAN" | "ALAT_KERJA" | "KEBUTUHAN_HARIAN";
+export type ProductCategory = "MAKANAN" | "MINUMAN" | "ELEKTRONIK_BIT" | "ALAT_KERJA" | "KEBUTUHAN_HARIAN";
 
 export interface CanteenProduct {
   id: string;
@@ -83,6 +83,44 @@ export interface CanteenProduct {
   stock: number;
   unit: string;
   imageUrl?: string;
+  description?: string;
+}
+
+export type CanteenOrderStatus =
+  | "MENUNGGU_KONFIRMASI"
+  | "DIPROSES"
+  | "SIAP_DIAMBIL"
+  | "SELESAI"
+  | "DIBATALKAN";
+
+export type CanteenPaymentMethod = "POTONG_GAJI" | "SALDO_KOPERASI" | "QRIS_TUNAI";
+
+export interface CanteenOrderItem {
+  productId: string;
+  productName: string;
+  price: number; // Harga anggota
+  regularPrice?: number;
+  quantity: number;
+  subtotal: number;
+  imageUrl?: string;
+}
+
+export interface CanteenOrder {
+  id: string;
+  orderNumber: string; // e.g. "ORD-BIT-881"
+  employeeId: string;
+  employeeNik: string;
+  employeeName: string;
+  department: string;
+  items: CanteenOrderItem[];
+  totalAmount: number;
+  totalSaved: number; // Penghematan berkat harga anggota
+  paymentMethod: CanteenPaymentMethod;
+  status: CanteenOrderStatus;
+  orderType: "KANTIN_MAKANAN" | "TOKO_PRODUK";
+  pickupTime?: string; // e.g. "Jam Istirahat 12:00"
+  notes?: string;
+  createdAt: string;
 }
 
 export interface PayrollDeductionRecord {

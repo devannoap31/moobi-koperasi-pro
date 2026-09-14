@@ -78,7 +78,7 @@ export const DashboardView: React.FC = () => {
             Selamat Datang di Portal Kopkar BIT
           </h1>
           <p className="text-white/90 text-sm leading-relaxed mb-6">
-            Melayani <strong>500 Karyawan PT Bhakti Idola Tama</strong> (Warehouse, Service Center, Logistik, & Office) dengan Simpan Pinjam otomatis, Toko Perkakas & Kantin harga khusus karyawan, serta integrasi Payroll terpusat.
+            Melayani <strong>Karyawan PT Bhakti Idola Tama</strong> (Warehouse, Service Center, Logistik, & Office) dengan Simpan Pinjam otomatis, Toko Perkakas & Kantin harga khusus karyawan, serta integrasi Payroll terpusat.
           </p>
           <div className="flex flex-wrap items-center gap-3">
             <Link
@@ -223,7 +223,7 @@ export const DashboardView: React.FC = () => {
             Rp 185.400.000
           </p>
           <p className="text-xs text-[#6F6B88]">
-            500 Karyawan PT Bhakti Idola Tama
+            Karyawan PT Bhakti Idola Tama
           </p>
         </div>
       </div>

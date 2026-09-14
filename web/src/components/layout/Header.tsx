@@ -16,12 +16,14 @@ import {
 import { useDebounce } from "@/hooks/useDebounce";
 import { sampleEmployees } from "@/data/mockData";
 import { EmployeeMember } from "@/types";
+import { useSidebar } from "@/context/SidebarContext";
 
 interface HeaderProps {
   onSearch?: (term: string) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ onSearch }) => {
+  const { isMobileOpen, toggleMobileSidebar } = useSidebar();
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<EmployeeMember[]>([]);
@@ -83,10 +85,38 @@ export const Header: React.FC<HeaderProps> = ({ onSearch }) => {
   };
 
   return (
-    <header className="h-18 sm:h-20 bg-white border-b border-[#E6E3F7] px-4 sm:px-6 md:px-8 flex items-center justify-between sticky top-0 z-30 shrink-0 gap-3 sm:gap-6">
-      {/* Left: Debounced Global Search Bar */}
-      <div className="flex items-center min-w-0 flex-1 relative" ref={searchContainerRef}>
-        <div className="relative w-full max-w-xs sm:max-w-sm md:max-w-md">
+    <header className="h-18 sm:h-20 bg-white border-b border-[#E6E3F7] px-4 sm:px-6 md:px-8 flex items-center justify-between sticky top-0 z-30 shrink-0 gap-2.5 sm:gap-6">
+      {/* Left: Mobile Hamburger Toggle + Debounced Global Search Bar */}
+      <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1 relative">
+        {/* Dynamic Hamburger to X Button (Visible only on mobile/tablet screens: lg:hidden) */}
+        <button
+          type="button"
+          onClick={toggleMobileSidebar}
+          aria-label={isMobileOpen ? "Tutup menu navigasi" : "Buka menu navigasi"}
+          title={isMobileOpen ? "Tutup menu" : "Buka menu"}
+          className="lg:hidden relative w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#F5F3FF] hover:bg-[#E6E3F7] active:scale-95 text-[#4A3AFF] flex items-center justify-center transition-all focus:outline-none cursor-pointer shrink-0 border border-[#E6E3F7]"
+        >
+          <div className="w-4.5 h-3.5 relative flex flex-col justify-between items-center pointer-events-none">
+            <span
+              className={`w-4.5 h-0.5 bg-[#4A3AFF] rounded-full transition-all duration-300 ease-in-out transform origin-center ${
+                isMobileOpen ? "rotate-45 translate-y-[6px]" : ""
+              }`}
+            />
+            <span
+              className={`w-4.5 h-0.5 bg-[#4A3AFF] rounded-full transition-all duration-200 ease-in-out ${
+                isMobileOpen ? "opacity-0 scale-x-0" : "opacity-100 scale-x-100"
+              }`}
+            />
+            <span
+              className={`w-4.5 h-0.5 bg-[#4A3AFF] rounded-full transition-all duration-300 ease-in-out transform origin-center ${
+                isMobileOpen ? "-rotate-45 -translate-y-[6px]" : ""
+              }`}
+            />
+          </div>
+        </button>
+
+        {/* Search Container */}
+        <div className="relative w-full max-w-xs sm:max-w-sm md:max-w-md" ref={searchContainerRef}>
           {/* Left Icon (Search / Spinner when typing/debouncing) */}
           <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6F6B88] pointer-events-none flex items-center justify-center">
             {searchTerm !== debouncedSearchTerm ? (

@@ -52,7 +52,7 @@ export const EmployeesView: React.FC = () => {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <h1 className="text-xl font-bold text-[#1C1B3A]">
-              Master Data 500 Karyawan PT. Bhakti Idola Tama
+              Master Data Karyawan PT. Bhakti Idola Tama
             </h1>
             <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#E6F9F0] text-[#2DBA7D]">
               Tersinkronisasi HRD BIT
@@ -65,8 +65,8 @@ export const EmployeesView: React.FC = () => {
 
         <div className="flex items-center gap-3">
           <div className="text-right hidden sm:block">
-            <p className="text-xs text-[#6F6B88]">Total Anggota Kopkar BIT</p>
-            <p className="text-lg font-bold text-[#4A3AFF]">500 / 500 Karyawan</p>
+            <p className="text-xs text-[#6F6B88]">Status Anggota Kopkar BIT</p>
+            <p className="text-lg font-bold text-[#4A3AFF]">Semua Karyawan Terdaftar</p>
           </div>
         </div>
       </div>

@@ -17,6 +17,7 @@ import {
   Sparkles,
   X,
   LogOut,
+  Store,
 } from "lucide-react";
 import { useSidebar } from "@/context/SidebarContext";
 
@@ -59,11 +60,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       href: "/canteen",
-      label: "Kantin & Toko BIT",
-      category: "POS Kasir & Dual Pricing",
-      icon: UtensilsCrossed,
-      badge: "Dual Price",
-      badgeType: "info",
+      label: "Kelola Mitra Kantin",
+      category: "Multi-Tenant & Arus Kas",
+      icon: Store,
+      badge: "Multi-Tenant",
+      badgeType: "primary",
       isActive: pathname.startsWith("/canteen"),
     },
     {

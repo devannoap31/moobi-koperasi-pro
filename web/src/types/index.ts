@@ -74,8 +74,34 @@ export interface LoanApplication {
 
 export type ProductCategory = "MAKANAN" | "MINUMAN" | "ELEKTRONIK_BIT" | "ALAT_KERJA" | "KEBUTUHAN_HARIAN";
 
+export type TenantStatus = "PENDING_APPROVAL" | "ACTIVE" | "SUSPENDED" | "REJECTED";
+
+export interface CanteenTenant {
+  id: string;
+  name: string; // e.g., "Kantin Mbak Sri - Masakan Nusantara"
+  ownerName: string; // e.g., "Sri Wahyuni"
+  username: string; // e.g., "kantin.sri"
+  email: string;
+  phone: string;
+  location: string; // e.g., "Kantin Utama - Stand 01"
+  category: string; // e.g., "Masakan Nusantara & Aneka Nasi"
+  bankName: string; // e.g., "Bank Mandiri"
+  bankAccountNumber: string; // e.g., "137-00-1928371-2"
+  bankAccountName: string; // e.g., "Sri Wahyuni"
+  status: TenantStatus;
+  createdAt: string;
+  totalRevenue: number;
+  pendingSettlement: number;
+  activeProductsCount: number;
+  rating: number;
+  avatarUrl?: string;
+  notes?: string;
+}
+
 export interface CanteenProduct {
   id: string;
+  tenantId?: string; // Multi-tenant owner stand
+  tenantName?: string;
   name: string;
   category: ProductCategory;
   regularPrice: number; // Harga Umum
@@ -107,6 +133,8 @@ export interface CanteenOrderItem {
 
 export interface CanteenOrder {
   id: string;
+  tenantId?: string;
+  tenantName?: string;
   orderNumber: string; // e.g. "ORD-BIT-881"
   employeeId: string;
   employeeNik: string;
@@ -121,6 +149,39 @@ export interface CanteenOrder {
   pickupTime?: string; // e.g. "Jam Istirahat 12:00"
   notes?: string;
   createdAt: string;
+}
+
+export interface EmployeeCanteenActivity {
+  id: string;
+  transactionTime: string; // YYYY-MM-DD HH:mm
+  employeeId: string;
+  employeeNik: string;
+  employeeName: string;
+  department: string;
+  tenantId: string;
+  tenantName: string;
+  itemsSummary: string; // e.g. "2x Ayam Geprek, 1x Es Teh"
+  totalAmount: number;
+  memberSavings: number;
+  paymentMethod: CanteenPaymentMethod;
+  payrollCutoffDate: string; // e.g. "2026-09-25"
+  settlementStatus: "PENDING_CUTOFF" | "SETTLED_TO_TENANT";
+}
+
+export interface CanteenSettlement {
+  id: string;
+  tenantId: string;
+  tenantName: string;
+  period: string; // e.g. "September 2026 (Cutoff 25)"
+  totalTransactions: number;
+  grossRevenue: number;
+  platformFee: number; // e.g. 1% atau iuran koperasi
+  netDisbursement: number;
+  bankName: string;
+  bankAccountNumber: string;
+  bankAccountName: string;
+  status: "PENDING" | "PROCESSED";
+  processedAt?: string;
 }
 
 export interface PayrollDeductionRecord {
@@ -147,3 +208,4 @@ export interface BankLiquidityStatus {
   bankCreditLineUsed: number;
   bankPartnerName: string;
 }
+

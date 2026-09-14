@@ -1,26 +1,59 @@
 @import "tailwindcss";
 
+@theme {
+  --color-primary: #4A3AFF;
+  --color-primary-hover: #6B5CEB;
+  --color-secondary: #6B5CEB;
+  --color-tertiary: #8E79F5;
+  --color-surface: #F5F3FF;
+  --color-border-subtle: #E6E3F7;
+  --color-app-text: #1C1B3A;
+  --color-on-surface: #212529;
+  --color-muted-text: #6F6B88;
+  --color-success: #2DBA7D;
+  --color-warning: #FFB547;
+  --color-error: #E5484D;
+  
+  --font-inter: var(--font-inter), sans-serif;
+  --radius-card: 18px;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --primary: #4A3AFF;
+  --secondary: #6B5CEB;
+  --tertiary: #8E79F5;
+  --surface: #F5F3FF;
+  --border: #E6E3F7;
+  --app-text: #1C1B3A;
+  --on-surface: #212529;
+  --muted: #6F6B88;
+  --success: #2DBA7D;
+  --warning: #FFB547;
+  --error: #E5484D;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: #FAFAFC;
+  color: #212529;
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom scrollbar for modern fintech feel */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F5F3FF;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #E6E3F7;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #8E79F5;
 }

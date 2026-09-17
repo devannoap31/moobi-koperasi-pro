@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Wallet,
   Coins,
@@ -15,7 +15,12 @@ import {
   Calculator,
   AlertCircle,
   Sparkles,
+  Search,
+  Loader2,
+  Check,
+  X,
 } from "lucide-react";
+import { useDebounce } from "@/hooks/useDebounce";
 import {
   sampleLoans,
   sampleEmployees,
@@ -29,6 +34,14 @@ export const SavingsLoansView: React.FC = () => {
 
   // Form State for new loan application
   const [selectedEmpId, setSelectedEmpId] = useState(sampleEmployees[0].id);
+  const [employeeSearchInput, setEmployeeSearchInput] = useState(
+    `${sampleEmployees[0].name} (${sampleEmployees[0].nik} - ${sampleEmployees[0].position})`
+  );
+  const [isEmpDropdownOpen, setIsEmpDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const debouncedEmpSearch = useDebounce(employeeSearchInput, 250);
+
   const [loanAmount, setLoanAmount] = useState<number>(10000000);
   const [tenorMonths, setTenorMonths] = useState<number>(12);
   const [loanPurpose, setLoanPurpose] = useState("");
@@ -45,6 +58,37 @@ export const SavingsLoansView: React.FC = () => {
   // Dynamic loan limit for selected employee
   const currentLimit = selectedEmployee.calculatedLoanLimit;
   const availableLimit = selectedEmployee.remainingLoanLimit;
+
+  // Filtered employees based on debounced search query
+  const filteredEmployees = sampleEmployees.filter((emp) => {
+    if (!debouncedEmpSearch.trim()) return true;
+    const query = debouncedEmpSearch.toLowerCase();
+    return (
+      emp.name.toLowerCase().includes(query) ||
+      emp.nik.toLowerCase().includes(query) ||
+      emp.position.toLowerCase().includes(query) ||
+      emp.department.toLowerCase().includes(query)
+    );
+  });
+
+  // Handle click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsEmpDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const handleSelectEmployee = (emp: (typeof sampleEmployees)[0]) => {
+    setSelectedEmpId(emp.id);
+    setEmployeeSearchInput(`${emp.name} (${emp.nik} - ${emp.position})`);
+    setIsEmpDropdownOpen(false);
+  };
 
   // Monthly Installment calculation (Bunga flat koperasi 6% per tahun)
   const interestRate = 0.06;
@@ -143,22 +187,90 @@ export const SavingsLoansView: React.FC = () => {
 
             <form onSubmit={handleApplyLoan} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Employee Selector */}
-                <div>
+                {/* Employee Searchable Selector with Debounce */}
+                <div className="relative" ref={dropdownRef}>
                   <label className="block text-xs font-bold text-[#1C1B3A] mb-1.5">
                     Pilih Karyawan
                   </label>
-                  <select
-                    value={selectedEmpId}
-                    onChange={(e) => setSelectedEmpId(e.target.value)}
-                    className="w-full bg-[#FAFAFC] border border-[#E6E3F7] rounded-[10px] px-3.5 py-2.5 text-xs text-[#1C1B3A] focus:outline-none focus:border-[#4A3AFF]"
-                  >
-                    {sampleEmployees.map((emp) => (
-                      <option key={emp.id} value={emp.id}>
-                        {emp.name} ({emp.nik} - {emp.position})
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6F6B88]">
+                      {employeeSearchInput !== debouncedEmpSearch ? (
+                        <Loader2 className="w-3.5 h-3.5 text-[#4A3AFF] animate-spin" />
+                      ) : (
+                        <Search className="w-3.5 h-3.5 text-[#6F6B88]" />
+                      )}
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Ketik nama karyawan, NIK, jabatan..."
+                      value={employeeSearchInput}
+                      onChange={(e) => {
+                        setEmployeeSearchInput(e.target.value);
+                        setIsEmpDropdownOpen(true);
+                      }}
+                      onFocus={() => setIsEmpDropdownOpen(true)}
+                      className="w-full bg-[#FAFAFC] border border-[#E6E3F7] rounded-[10px] pl-9 pr-8 py-2.5 text-xs text-[#1C1B3A] font-semibold focus:outline-none focus:border-[#4A3AFF] focus:bg-white transition-all"
+                      required
+                    />
+                    {employeeSearchInput && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEmployeeSearchInput("");
+                          setIsEmpDropdownOpen(true);
+                        }}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#A5A2B8] hover:text-[#1C1B3A] p-0.5 rounded-full cursor-pointer"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Auto-suggest Dropdown */}
+                  {isEmpDropdownOpen && (
+                    <div className="absolute left-0 right-0 top-[calc(100%+4px)] z-50 bg-white border border-[#E6E3F7] rounded-[14px] shadow-xl max-h-60 overflow-y-auto divide-y divide-[#E6E3F7]/60 animate-fadeIn">
+                      {filteredEmployees.length > 0 ? (
+                        filteredEmployees.map((emp) => {
+                          const isSelected = emp.id === selectedEmpId;
+                          return (
+                            <button
+                              key={emp.id}
+                              type="button"
+                              onClick={() => handleSelectEmployee(emp)}
+                              className={`w-full text-left p-3 hover:bg-[#F5F3FF] transition-colors flex items-center justify-between gap-2 cursor-pointer ${
+                                isSelected ? "bg-[#F5F3FF]/70" : ""
+                              }`}
+                            >
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-bold text-xs text-[#1C1B3A] truncate">{emp.name}</span>
+                                  <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded-full bg-[#E6F9F0] text-[#2DBA7D]">
+                                    {emp.position}
+                                  </span>
+                                </div>
+                                <p className="text-[10.5px] text-[#6F6B88] truncate">
+                                  NIK: <span className="font-mono">{emp.nik}</span> • {emp.department}
+                                </p>
+                                <p className="text-[10px] text-[#4A3AFF] font-medium">
+                                  Sisa Plafon: Rp {emp.remainingLoanLimit.toLocaleString("id-ID")}
+                                </p>
+                              </div>
+
+                              {isSelected && (
+                                <div className="w-5 h-5 rounded-full bg-[#4A3AFF] text-white flex items-center justify-center shrink-0">
+                                  <Check className="w-3 h-3" />
+                                </div>
+                              )}
+                            </button>
+                          );
+                        })
+                      ) : (
+                        <div className="p-4 text-center text-xs text-[#6F6B88]">
+                          Tidak ada karyawan yang cocok dengan &quot;{debouncedEmpSearch}&quot;
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Amount */}

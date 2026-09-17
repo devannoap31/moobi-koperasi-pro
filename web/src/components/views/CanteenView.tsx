@@ -108,11 +108,11 @@ export const CanteenView: React.FC = () => {
 
   const categories: { id: string; label: string }[] = [
     { id: "ALL", label: "Semua Kategori" },
-    { id: "MAKANAN", label: "🍱 Makanan Kantin" },
-    { id: "MINUMAN", label: "🥤 Minuman" },
-    { id: "ELEKTRONIK_BIT", label: "⚡ Elektronik & Perkakas BIT" },
-    { id: "ALAT_KERJA", label: "🔧 Alat Kerja & Safety" },
-    { id: "KEBUTUHAN_HARIAN", label: "🍳 Cookware & Harian" },
+    { id: "MAKANAN", label: "Makanan Kantin" },
+    { id: "MINUMAN", label: "Minuman" },
+    { id: "ELEKTRONIK_BIT", label: "Elektronik & Perkakas BIT" },
+    { id: "ALAT_KERJA", label: "Alat Kerja & Safety" },
+    { id: "KEBUTUHAN_HARIAN", label: "Cookware & Harian" },
   ];
 
   // Available image presets for easy photo selection in CRUD
@@ -1496,7 +1496,7 @@ export const CanteenView: React.FC = () => {
                 className="w-full py-3 px-4 rounded-full bg-[#1C1B3A] hover:bg-[#25244C] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer active:scale-[0.98]"
               >
                 <Printer className="w-4 h-4 text-[#2DBA7D]" />
-                <span>🖨️ Cetak Struk Thermal ({receiptPaperSize})</span>
+                <span>Cetak Struk Thermal ({receiptPaperSize})</span>
               </button>
 
               <button
@@ -1561,11 +1561,11 @@ export const CanteenView: React.FC = () => {
                     }
                     className="w-full bg-[#FAFAFC] border border-[#E6E3F7] rounded-[10px] px-3 py-2.5 text-xs font-semibold text-[#1C1B3A] focus:outline-none focus:border-[#4A3AFF]"
                   >
-                    <option value="MAKANAN">🍱 Makanan Kantin</option>
-                    <option value="MINUMAN">🥤 Minuman</option>
-                    <option value="ELEKTRONIK_BIT">⚡ Elektronik &amp; Perkakas BIT</option>
-                    <option value="ALAT_KERJA">🔧 Alat Kerja &amp; Safety</option>
-                    <option value="KEBUTUHAN_HARIAN">🍳 Cookware &amp; Harian</option>
+                    <option value="MAKANAN">Makanan Kantin</option>
+                    <option value="MINUMAN">Minuman</option>
+                    <option value="ELEKTRONIK_BIT">Elektronik &amp; Perkakas BIT</option>
+                    <option value="ALAT_KERJA">Alat Kerja &amp; Safety</option>
+                    <option value="KEBUTUHAN_HARIAN">Cookware &amp; Harian</option>
                   </select>
                 </div>
 
@@ -1744,11 +1744,11 @@ export const CanteenView: React.FC = () => {
                     }
                     className="w-full bg-[#FAFAFC] border border-[#E6E3F7] rounded-[10px] px-3 py-2.5 text-xs font-semibold text-[#1C1B3A] focus:outline-none focus:border-[#4A3AFF]"
                   >
-                    <option value="MAKANAN">🍱 Makanan Kantin</option>
-                    <option value="MINUMAN">🥤 Minuman</option>
-                    <option value="ELEKTRONIK_BIT">⚡ Elektronik &amp; Perkakas BIT</option>
-                    <option value="ALAT_KERJA">🔧 Alat Kerja &amp; Safety</option>
-                    <option value="KEBUTUHAN_HARIAN">🍳 Cookware &amp; Harian</option>
+                    <option value="MAKANAN">Makanan Kantin</option>
+                    <option value="MINUMAN">Minuman</option>
+                    <option value="ELEKTRONIK_BIT">Elektronik &amp; Perkakas BIT</option>
+                    <option value="ALAT_KERJA">Alat Kerja &amp; Safety</option>
+                    <option value="KEBUTUHAN_HARIAN">Cookware &amp; Harian</option>
                   </select>
                 </div>
 

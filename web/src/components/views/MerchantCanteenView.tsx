@@ -184,11 +184,11 @@ export const MerchantCanteenView: React.FC = () => {
 
   const categories: { id: string; label: string }[] = [
     { id: "ALL", label: "Semua Kategori" },
-    { id: "MAKANAN", label: "🍱 Makanan Kantin" },
-    { id: "MINUMAN", label: "🥤 Minuman" },
-    { id: "ELEKTRONIK_BIT", label: "⚡ Elektronik & Perkakas BIT" },
-    { id: "ALAT_KERJA", label: "🔧 Alat Kerja & Safety" },
-    { id: "KEBUTUHAN_HARIAN", label: "🍳 Cookware & Harian" },
+    { id: "MAKANAN", label: "Makanan Kantin" },
+    { id: "MINUMAN", label: "Minuman" },
+    { id: "ELEKTRONIK_BIT", label: "Elektronik & Perkakas BIT" },
+    { id: "ALAT_KERJA", label: "Alat Kerja & Safety" },
+    { id: "KEBUTUHAN_HARIAN", label: "Cookware & Harian" },
   ];
 
   // Image Presets for CRUD
@@ -596,7 +596,7 @@ export const MerchantCanteenView: React.FC = () => {
                 : "bg-[#FFF4E5] text-[#D97706]"
             }`}
           >
-            {buyerType === "MEMBER" ? "✓ Harga Anggota Aktif" : "⚠ Tarif Harga Umum"}
+            {buyerType === "MEMBER" ? "✓ Harga Anggota Aktif" : "Tarif Harga Umum"}
           </span>
         </div>
 
@@ -860,7 +860,7 @@ export const MerchantCanteenView: React.FC = () => {
                 : "bg-[#FAFAFC] text-[#6F6B88] border-[#E6E3F7] hover:bg-white"
             }`}
           >
-            💵 Tunai (Cash)
+            Tunai (Cash)
           </button>
         </div>
       </div>
@@ -892,7 +892,7 @@ export const MerchantCanteenView: React.FC = () => {
             </div>
           </div>
           <p className="text-[10px] text-[#4A3AFF] bg-white/80 py-1 px-2.5 rounded-[8px] border border-[#E6E3F7] font-medium text-center">
-            💡 Klik tombol <strong>&quot;Tampilkan QRIS &amp; Bayar&quot;</strong> di bawah untuk membuka barcode QRIS bagi pembeli.
+            Klik tombol <strong>&quot;Tampilkan QRIS &amp; Bayar&quot;</strong> di bawah untuk membuka barcode QRIS bagi pembeli.
           </p>
         </div>
       )}
@@ -965,7 +965,7 @@ export const MerchantCanteenView: React.FC = () => {
                 onClick={() => setCashReceivedInput(effectiveSubtotal.toString())}
                 className="px-2 py-1 rounded-[8px] bg-white border border-[#2DBA7D]/40 text-[#2DBA7D] hover:bg-[#E6F9F0] text-[10.5px] font-bold cursor-pointer transition-all shadow-2xs"
               >
-                ⚡ Uang Pas (Rp {effectiveSubtotal.toLocaleString("id-ID")})
+                Uang Pas (Rp {effectiveSubtotal.toLocaleString("id-ID")})
               </button>
               {[10000, 20000, 50000, 100000].map((nominal) => (
                 <button
@@ -1000,7 +1000,7 @@ export const MerchantCanteenView: React.FC = () => {
               <div className="p-2.5 rounded-[12px] bg-[#E6F9F0] border border-[#2DBA7D] text-[#059669] flex items-center justify-between shadow-2xs">
                 <div>
                   <p className="text-[10.5px] font-medium text-[#059669]/80">
-                    {cashChange === 0 ? "Uang Pas Diterima:" : "💵 Uang Kembalian Pembeli:"}
+                    {cashChange === 0 ? "Uang Pas Diterima:" : "Uang Kembalian Pembeli:"}
                   </p>
                   <p className="text-base font-black text-[#059669]">
                     Rp {cashChange.toLocaleString("id-ID")}
@@ -1013,7 +1013,10 @@ export const MerchantCanteenView: React.FC = () => {
             ) : (
               <div className="p-2.5 rounded-[12px] bg-red-50 border border-red-200 text-red-700 flex items-center justify-between shadow-2xs">
                 <div>
-                  <p className="text-[10.5px] font-medium text-red-600">⚠️ Uang Tunai Kurang:</p>
+                  <p className="text-[10.5px] font-medium text-red-600 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    <span>Uang Tunai Kurang:</span>
+                  </p>
                   <p className="text-sm font-black text-red-700">
                     -Rp {(effectiveSubtotal - numericCashReceived).toLocaleString("id-ID")}
                   </p>
@@ -1025,7 +1028,7 @@ export const MerchantCanteenView: React.FC = () => {
             )
           ) : (
             <div className="p-2 rounded-[10px] bg-white/80 border border-[#E6E3F7] text-[10.5px] text-[#6F6B88] text-center">
-              💡 Masukkan jumlah uang tunai yang diberikan pembeli di atas.
+              Masukkan jumlah uang tunai yang diberikan pembeli di atas.
             </div>
           )}
         </div>
@@ -1093,7 +1096,7 @@ export const MerchantCanteenView: React.FC = () => {
         {paymentMethod === "QRIS_TUNAI" ? (
           <>
             <QrCode className="w-4 h-4" />
-            <span>📱 Tampilkan QRIS &amp; Bayar (Rp {effectiveSubtotal.toLocaleString("id-ID")})</span>
+            <span>Tampilkan QRIS &amp; Bayar (Rp {effectiveSubtotal.toLocaleString("id-ID")})</span>
           </>
         ) : paymentMethod === "CASH_TUNAI" ? (
           numericCashReceived > 0 && !isCashSufficient ? (
@@ -1105,7 +1108,7 @@ export const MerchantCanteenView: React.FC = () => {
             <>
               <Check className="w-4 h-4" />
               <span>
-                💵 Bayar Tunai &amp; Cetak Struk {isCashSufficient && cashChange > 0 ? `(Kembalian Rp ${cashChange.toLocaleString("id-ID")})` : `(Rp ${effectiveSubtotal.toLocaleString("id-ID")})`}
+                Bayar Tunai &amp; Cetak Struk {isCashSufficient && cashChange > 0 ? `(Kembalian Rp ${cashChange.toLocaleString("id-ID")})` : `(Rp ${effectiveSubtotal.toLocaleString("id-ID")})`}
               </span>
             </>
           )
@@ -2424,7 +2427,7 @@ export const MerchantCanteenView: React.FC = () => {
                 className="w-full py-3 px-4 rounded-full bg-[#1C1B3A] hover:bg-[#25244C] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer active:scale-[0.98]"
               >
                 <Printer className="w-4 h-4 text-[#2DBA7D]" />
-                <span>🖨️ Cetak Struk Thermal ({receiptPaperSize})</span>
+                <span>Cetak Struk Thermal ({receiptPaperSize})</span>
               </button>
 
               <button

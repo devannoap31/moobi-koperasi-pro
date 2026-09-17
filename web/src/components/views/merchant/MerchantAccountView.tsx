@@ -513,23 +513,27 @@ export const MerchantAccountView: React.FC = () => {
                       <td className="py-3 px-3">
                         <div className="space-y-1">
                           {req.requestedFields.bankAccountNumber && (
-                            <span className="block text-[11px] text-[#4A3AFF] font-bold">
-                              💳 Bank: {req.requestedFields.bankName} - {req.requestedFields.bankAccountNumber}
+                            <span className="flex items-center gap-1.5 text-[11px] text-[#4A3AFF] font-bold">
+                              <CreditCard className="w-3.5 h-3.5 shrink-0" />
+                              <span>Bank: {req.requestedFields.bankName} - {req.requestedFields.bankAccountNumber}</span>
                             </span>
                           )}
                           {req.requestedFields.name && (
-                            <span className="block text-[11px] text-[#1C1B3A]">
-                              🏢 Nama Stand: {req.requestedFields.name}
+                            <span className="flex items-center gap-1.5 text-[11px] text-[#1C1B3A]">
+                              <Building2 className="w-3.5 h-3.5 shrink-0 text-[#6F6B88]" />
+                              <span>Nama Stand: {req.requestedFields.name}</span>
                             </span>
                           )}
                           {req.requestedFields.ownerName && (
-                            <span className="block text-[11px] text-[#1C1B3A]">
-                              👤 Pemilik: {req.requestedFields.ownerName}
+                            <span className="flex items-center gap-1.5 text-[11px] text-[#1C1B3A]">
+                              <User className="w-3.5 h-3.5 shrink-0 text-[#6F6B88]" />
+                              <span>Pemilik: {req.requestedFields.ownerName}</span>
                             </span>
                           )}
                           {req.requestedFields.location && (
-                            <span className="block text-[11px] text-[#6F6B88]">
-                              📍 Lokasi: {req.requestedFields.location}
+                            <span className="flex items-center gap-1.5 text-[11px] text-[#6F6B88]">
+                              <MapPin className="w-3.5 h-3.5 shrink-0 text-[#6F6B88]" />
+                              <span>Lokasi: {req.requestedFields.location}</span>
                             </span>
                           )}
                         </div>
@@ -541,7 +545,7 @@ export const MerchantAccountView: React.FC = () => {
 
                       <td className="py-3 px-3 whitespace-nowrap">
                         <span
-                          className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
+                          className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 w-fit ${
                             req.status === "APPROVED"
                               ? "bg-[#E6F9F0] text-[#2DBA7D]"
                               : req.status === "PENDING_APPROVAL"
@@ -549,11 +553,22 @@ export const MerchantAccountView: React.FC = () => {
                               : "bg-red-50 text-red-600"
                           }`}
                         >
-                          {req.status === "APPROVED"
-                            ? "✓ Disetujui Superadmin"
-                            : req.status === "PENDING_APPROVAL"
-                            ? "⏳ Menunggu Persetujuan"
-                            : "✕ Ditolak Superadmin"}
+                          {req.status === "APPROVED" ? (
+                            <>
+                              <Check className="w-3 h-3" />
+                              <span>Disetujui Superadmin</span>
+                            </>
+                          ) : req.status === "PENDING_APPROVAL" ? (
+                            <>
+                              <Clock className="w-3 h-3" />
+                              <span>Menunggu Persetujuan</span>
+                            </>
+                          ) : (
+                            <>
+                              <XCircle className="w-3 h-3" />
+                              <span>Ditolak Superadmin</span>
+                            </>
+                          )}
                         </span>
                       </td>
 

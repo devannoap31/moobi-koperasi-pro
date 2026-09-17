@@ -170,8 +170,8 @@ export default function CanteenLoginPage() {
 
           {/* Heading */}
           <div className="space-y-1 text-center sm:text-left border-t border-[#E6E3F7] pt-4">
-            <h1 className="text-xl sm:text-2xl font-bold text-[#1C1B3A] tracking-tight">
-              Masuk Kasir Stand Kantin 🍱
+            <h1 className="text-xl sm:text-2xl font-bold text-[#1C1B3A] tracking-tight flex items-center gap-2 justify-center sm:justify-start">
+              <span>Masuk Kasir Stand Kantin</span>
             </h1>
             <p className="text-xs text-[#6F6B88] leading-relaxed">
               Masuk untuk melayani kasir POS, memproses orderan online karyawan, dan kelola menu stand Anda.

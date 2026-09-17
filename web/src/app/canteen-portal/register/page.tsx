@@ -128,7 +128,7 @@ export default function CanteenRegisterPage() {
                 <span>Pendaftaran Mitra Usaha Kantin PT BIT</span>
               </div>
               <h1 className="text-xl sm:text-2xl font-bold text-[#1C1B3A] tracking-tight">
-                Registrasi Akun Stand Kantin Baru 🏪
+                Registrasi Akun Stand Kantin Baru
               </h1>
               <p className="text-xs text-[#6F6B88] leading-relaxed">
                 Daftarkan usaha kantin atau katering Anda untuk berjualan di ekosistem Kopkar PT Bhakti Idola Tama dan melayani ratusan karyawan secara digital.
@@ -365,7 +365,7 @@ export default function CanteenRegisterPage() {
                 Status: Menunggu Persetujuan Superadmin
               </span>
               <h2 className="text-xl sm:text-2xl font-bold text-[#1C1B3A]">
-                Pendaftaran Stand Berhasil Dikirim! 🎉
+                Pendaftaran Stand Berhasil Dikirim!
               </h2>
               <p className="text-xs text-[#6F6B88] max-w-md mx-auto leading-relaxed">
                 Terima kasih <strong>{submittedTenant?.ownerName}</strong>. Pengajuan untuk stand <strong>&quot;{submittedTenant?.name}&quot;</strong> telah diterima oleh sistem Kopkar PT Bhakti Idola Tama.

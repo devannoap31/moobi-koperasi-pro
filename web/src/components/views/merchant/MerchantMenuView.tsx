@@ -45,11 +45,11 @@ export const MerchantMenuView: React.FC = () => {
 
   const categories: { id: string; label: string }[] = [
     { id: "ALL", label: "Semua Kategori" },
-    { id: "MAKANAN", label: "🍱 Makanan Kantin" },
-    { id: "MINUMAN", label: "🥤 Minuman" },
-    { id: "ELEKTRONIK_BIT", label: "⚡ Elektronik & Perkakas BIT" },
-    { id: "ALAT_KERJA", label: "🔧 Alat Kerja & Safety" },
-    { id: "KEBUTUHAN_HARIAN", label: "🍳 Cookware & Harian" },
+    { id: "MAKANAN", label: "Makanan Kantin" },
+    { id: "MINUMAN", label: "Minuman" },
+    { id: "ELEKTRONIK_BIT", label: "Elektronik & Perkakas BIT" },
+    { id: "ALAT_KERJA", label: "Alat Kerja & Safety" },
+    { id: "KEBUTUHAN_HARIAN", label: "Cookware & Harian" },
   ];
 
   // Filter Products

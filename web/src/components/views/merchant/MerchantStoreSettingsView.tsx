@@ -300,7 +300,17 @@ export const MerchantStoreSettingsView: React.FC = () => {
                 : "bg-red-50 text-red-600 border border-red-200"
             }`}
           >
-            {formData.isOpen ? "🟢 Stand Sedang Buka" : "🔴 Stand Tutup Sementara"}
+            {formData.isOpen ? (
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-[#2DBA7D] animate-pulse" />
+                <span>Stand Sedang Buka</span>
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-red-500" />
+                <span>Stand Tutup Sementara</span>
+              </span>
+            )}
           </span>
         </div>
 
@@ -879,8 +889,9 @@ export const MerchantStoreSettingsView: React.FC = () => {
             </p>
 
             {qrisToDelete.isActive && (
-              <p className="text-[11px] text-[#D97706] bg-[#FFF4E5] p-2.5 rounded-[10px] border border-[#FDE68A]">
-                ⚠️ QRIS ini sedang aktif. Jika dihapus, barcode lain yang tersisa akan otomatis dijadikan aktif.
+              <p className="text-[11px] text-[#D97706] bg-[#FFF4E5] p-2.5 rounded-[10px] border border-[#FDE68A] flex items-center gap-1.5">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>QRIS ini sedang aktif. Jika dihapus, barcode lain yang tersisa akan otomatis dijadikan aktif.</span>
               </p>
             )}
 

@@ -614,9 +614,9 @@ export const SuperadminCanteenManagementView: React.FC = () => {
                         {t.status === "ACTIVE"
                           ? "✓ Aktif"
                           : t.status === "PENDING_APPROVAL"
-                          ? "⏳ Menunggu Approval"
+                          ? "Menunggu Approval"
                           : t.status === "SUSPENDED"
-                          ? "🚫 Dibekukan"
+                          ? "Dibekukan"
                           : "Ditolak"}
                       </span>
                     </td>
@@ -891,7 +891,7 @@ export const SuperadminCanteenManagementView: React.FC = () => {
                         >
                           {stl.status === "PROCESSED"
                             ? `✓ Ditransfer (${stl.processedAt})`
-                            : "⏳ Siap Ditransfer (Cutoff 25)"}
+                            : "Siap Ditransfer (Cutoff 25)"}
                         </span>
                       </td>
 

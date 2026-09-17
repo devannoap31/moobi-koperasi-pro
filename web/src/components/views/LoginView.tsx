@@ -138,7 +138,7 @@ export const LoginView: React.FC = () => {
           {/* Heading */}
           <div className="space-y-1 text-center sm:text-left border-t border-[#E6E3F7] pt-4">
             <h1 className="text-xl sm:text-2xl font-bold text-[#1C1B3A] tracking-tight">
-              Selamat Datang Kembali 👋
+              Selamat Datang Kembali
             </h1>
             <p className="text-xs text-[#6F6B88] leading-relaxed">
               Masuk dengan akun pengurus atau karyawan untuk mengakses dashboard koperasi.

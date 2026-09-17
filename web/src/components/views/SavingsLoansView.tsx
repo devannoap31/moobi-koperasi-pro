@@ -96,8 +96,20 @@ export const SavingsLoansView: React.FC = () => {
   const monthlyPrincipal = loanAmount / (tenorMonths || 1);
   const estimatedMonthlyInstallment = Math.round(monthlyPrincipal + monthlyInterest);
 
+  const isTenureEligible = selectedEmployee.tenureYears >= 1;
+
   const handleApplyLoan = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isTenureEligible) {
+      alert("Pengajuan tidak dapat diproses: Masa kerja karyawan belum mencapai minimal 1 tahun.");
+      return;
+    }
+
+    if (loanAmount > availableLimit) {
+      alert(`Nominal pinjaman melebihi sisa plafon yang tersedia (Maks: Rp ${availableLimit.toLocaleString("id-ID")})`);
+      return;
+    }
+
     const newLoan: LoanApplication = {
       id: `LOAN-2026-${Math.floor(100 + Math.random() * 900)}`,
       employeeId: selectedEmployee.id,
@@ -110,7 +122,7 @@ export const SavingsLoansView: React.FC = () => {
       monthlyInstallment: estimatedMonthlyInstallment,
       interestRateAnnual: 6.0,
       purpose: loanPurpose || "Kebutuhan Darurat Karyawan",
-      status: "PENDING_KOPERASI",
+      status: "PENDING_HR", // Sesuai aturan PM: Wajib melalui verifikasi HRD terlebih dahulu
       appliedDate: new Date().toISOString().split("T")[0],
       fundingSource: loanAmount > 25000000 ? "BANK_CHANNELING" : "KAS_KOPERASI",
       bankPartnerName: loanAmount > 25000000 ? "Bank Mandiri Channeling" : undefined,
@@ -137,7 +149,7 @@ export const SavingsLoansView: React.FC = () => {
             Modul Simpan Pinjam Koperasi Pabrik
           </h1>
           <p className="text-xs text-[#6F6B88]">
-            Simpanan Wajib & Sukarela berjangka, serta pengajuan pinjaman autodebet potong gaji.
+            Simpanan Wajib & Sukarela berjangka, serta pengajuan pinjaman autodebet potong gaji (DSR 30% x 12 Bln).
           </p>
         </div>
 
@@ -171,19 +183,49 @@ export const SavingsLoansView: React.FC = () => {
         <div className="space-y-6">
           {/* Top: Instant Loan Calculator & Application Form */}
           <div className="bg-white p-6 rounded-[18px] border border-[#E6E3F7] shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-full bg-[#F5F3FF] text-[#4A3AFF] flex items-center justify-center">
-                <Calculator className="w-4 h-4" />
+            <div className="flex items-center justify-between gap-2 mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-[#F5F3FF] text-[#4A3AFF] flex items-center justify-center">
+                  <Calculator className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-[#1C1B3A]">
+                    Formulir Pengajuan Pinjaman Karyawan & Simulasi Cicilan
+                  </h3>
+                  <p className="text-xs text-[#6F6B88]">
+                    Plafon Maksimal: <strong>30% Gaji Pokok x 12 Bulan</strong> (Tanpa Agunan • Autodebet Payroll)
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-bold text-sm text-[#1C1B3A]">
-                  Formulir Pengajuan Pinjaman Karyawan & Simulasi Cicilan
-                </h3>
-                <p className="text-xs text-[#6F6B88]">
-                  Plafon pinjaman otomatis diverifikasi dari data HRD
-                </p>
+
+              {/* Eligibility Badge */}
+              <div className="hidden sm:block">
+                {isTenureEligible ? (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E6F9F0] text-[#2DBA7D] text-xs font-bold border border-[#2DBA7D]/30">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    Eligible (Masa Kerja {selectedEmployee.tenureYears} Tahun)
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FFEBEB] text-[#E5484D] text-xs font-bold border border-[#E5484D]/30">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    Belum Eligible (Masa Kerja &lt; 1 Tahun)
+                  </span>
+                )}
               </div>
             </div>
+
+            {/* Ineligible Alert Banner if tenure < 1 year */}
+            {!isTenureEligible && (
+              <div className="mb-4 p-3.5 rounded-[12px] bg-[#FFEBEB] border border-[#E5484D]/30 text-[#E5484D] text-xs flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold">Ketentuan Masa Kerja Koperasi Belum Terpenuhi</p>
+                  <p className="text-[11.5px] mt-0.5 text-[#E5484D]/90">
+                    Karyawan <strong>{selectedEmployee.name}</strong> baru bekerja selama <strong>{Math.round(selectedEmployee.tenureYears * 12)} bulan</strong>. Sesuai aturan PM & Koperasi, pengajuan pinjaman hanya diizinkan bagi karyawan dengan masa kerja minimal <strong>1 tahun (12 bulan)</strong>.
+                  </p>
+                </div>
+              </div>
+            )}
 
             <form onSubmit={handleApplyLoan} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -232,6 +274,7 @@ export const SavingsLoansView: React.FC = () => {
                       {filteredEmployees.length > 0 ? (
                         filteredEmployees.map((emp) => {
                           const isSelected = emp.id === selectedEmpId;
+                          const isEmpEligible = emp.tenureYears >= 1;
                           return (
                             <button
                               key={emp.id}
@@ -247,12 +290,19 @@ export const SavingsLoansView: React.FC = () => {
                                   <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded-full bg-[#E6F9F0] text-[#2DBA7D]">
                                     {emp.position}
                                   </span>
+                                  {!isEmpEligible && (
+                                    <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-[#FFEBEB] text-[#E5484D]">
+                                      &lt; 1 Thn
+                                    </span>
+                                  )}
                                 </div>
                                 <p className="text-[10.5px] text-[#6F6B88] truncate">
-                                  NIK: <span className="font-mono">{emp.nik}</span> • {emp.department}
+                                  NIK: <span className="font-mono">{emp.nik}</span> • {emp.department} • Gaji: Rp {emp.monthlySalary.toLocaleString("id-ID")}
                                 </p>
-                                <p className="text-[10px] text-[#4A3AFF] font-medium">
-                                  Sisa Plafon: Rp {emp.remainingLoanLimit.toLocaleString("id-ID")}
+                                <p className={`text-[10px] font-medium ${isEmpEligible ? "text-[#4A3AFF]" : "text-[#E5484D]"}`}>
+                                  {isEmpEligible
+                                    ? `Sisa Plafon: Rp ${emp.remainingLoanLimit.toLocaleString("id-ID")}`
+                                    : "Belum Berhak Mengajukan Pinjaman"}
                                 </p>
                               </div>
 
@@ -282,14 +332,19 @@ export const SavingsLoansView: React.FC = () => {
                     type="number"
                     step="500000"
                     min="1000000"
-                    max={availableLimit}
+                    max={availableLimit || 1000000}
+                    disabled={!isTenureEligible}
                     value={loanAmount}
                     onChange={(e) => setLoanAmount(Number(e.target.value))}
-                    className="w-full bg-[#FAFAFC] border border-[#E6E3F7] rounded-[10px] px-3.5 py-2.5 text-xs text-[#1C1B3A] focus:outline-none focus:border-[#4A3AFF]"
+                    className="w-full bg-[#FAFAFC] border border-[#E6E3F7] rounded-[10px] px-3.5 py-2.5 text-xs text-[#1C1B3A] focus:outline-none focus:border-[#4A3AFF] disabled:bg-gray-100 disabled:cursor-not-allowed"
                     required
                   />
                   <span className="text-[10px] text-[#6F6B88] mt-1 block">
-                    Maks. Sisa Limit: <strong>Rp {availableLimit.toLocaleString("id-ID")}</strong>
+                    {isTenureEligible ? (
+                      <>Maks. Sisa Plafon (30% Gaji x 12): <strong>Rp {availableLimit.toLocaleString("id-ID")}</strong></>
+                    ) : (
+                      <span className="text-[#E5484D] font-medium">Plafon dinonaktifkan (Masa kerja &lt; 1 tahun)</span>
+                    )}
                   </span>
                 </div>
 
@@ -300,8 +355,9 @@ export const SavingsLoansView: React.FC = () => {
                   </label>
                   <select
                     value={tenorMonths}
+                    disabled={!isTenureEligible}
                     onChange={(e) => setTenorMonths(Number(e.target.value))}
-                    className="w-full bg-[#FAFAFC] border border-[#E6E3F7] rounded-[10px] px-3.5 py-2.5 text-xs text-[#1C1B3A] focus:outline-none focus:border-[#4A3AFF]"
+                    className="w-full bg-[#FAFAFC] border border-[#E6E3F7] rounded-[10px] px-3.5 py-2.5 text-xs text-[#1C1B3A] focus:outline-none focus:border-[#4A3AFF] disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
                     <option value={6}>6 Bulan</option>
                     <option value={10}>10 Bulan</option>
@@ -320,10 +376,11 @@ export const SavingsLoansView: React.FC = () => {
                 </label>
                 <input
                   type="text"
+                  disabled={!isTenureEligible}
                   placeholder="Contoh: Renovasi Rumah, Biaya Masuk Sekolah, Kebutuhan Kesehatan"
                   value={loanPurpose}
                   onChange={(e) => setLoanPurpose(e.target.value)}
-                  className="w-full bg-[#FAFAFC] border border-[#E6E3F7] rounded-[10px] px-3.5 py-2.5 text-xs text-[#1C1B3A] focus:outline-none focus:border-[#4A3AFF]"
+                  className="w-full bg-[#FAFAFC] border border-[#E6E3F7] rounded-[10px] px-3.5 py-2.5 text-xs text-[#1C1B3A] focus:outline-none focus:border-[#4A3AFF] disabled:bg-gray-100 disabled:cursor-not-allowed"
                   required
                 />
               </div>
@@ -332,14 +389,14 @@ export const SavingsLoansView: React.FC = () => {
               <div className="p-4 rounded-[14px] bg-[#F5F3FF] border border-[#E6E3F7] flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
                   <div>
-                    <span className="text-[#6F6B88] block text-[11px]">Plafon Karyawan</span>
+                    <span className="text-[#6F6B88] block text-[11px]">Plafon Pinjaman (30% x 12)</span>
                     <span className="font-bold text-[#1C1B3A]">
                       Rp {currentLimit.toLocaleString("id-ID")}
                     </span>
                   </div>
                   <div>
                     <span className="text-[#6F6B88] block text-[11px]">Bunga Koperasi</span>
-                    <span className="font-bold text-[#2DBA7D]">6% Flat / Thn</span>
+                    <span className="font-bold text-[#2DBA7D]">6% Flat / Thn (Payroll)</span>
                   </div>
                   <div>
                     <span className="text-[#6F6B88] block text-[11px]">Estimasi Cicilan / Bln</span>
@@ -350,14 +407,15 @@ export const SavingsLoansView: React.FC = () => {
                   <div>
                     <span className="text-[#6F6B88] block text-[11px]">Sumber Pendanaan</span>
                     <span className="font-bold text-[#1C1B3A]">
-                      {loanAmount > 25000000 ? "Bank Channeling" : "Kas Internal"}
+                      {loanAmount > 25000000 ? "Bank Mandiri Channeling" : "Kas Koperasi BIT"}
                     </span>
                   </div>
                 </div>
 
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-full bg-[#4A3AFF] hover:bg-[#6B5CEB] text-white text-xs font-bold transition-all shadow-sm cursor-pointer shrink-0"
+                  disabled={!isTenureEligible || loanAmount > availableLimit || loanAmount <= 0}
+                  className="px-6 py-2.5 rounded-full bg-[#4A3AFF] hover:bg-[#6B5CEB] text-white text-xs font-bold transition-all shadow-sm cursor-pointer shrink-0 disabled:bg-[#A5A2B8] disabled:cursor-not-allowed"
                 >
                   Ajukan Pinjaman
                 </button>
@@ -367,19 +425,24 @@ export const SavingsLoansView: React.FC = () => {
             {showSuccessModal && (
               <div className="mt-4 p-3 rounded-full bg-[#E6F9F0] border border-[#2DBA7D]/30 text-[#2DBA7D] text-xs font-semibold flex items-center gap-2 animate-fadeIn">
                 <CheckCircle2 className="w-4 h-4" />
-                <span>Pengajuan pinjaman berhasil dibuat dan masuk antrean persetujuan!</span>
+                <span>Pengajuan pinjaman berhasil dibuat dan diteruskan ke <strong>Verifikasi HRD</strong>!</span>
               </div>
             )}
           </div>
 
           {/* Loan List Table */}
           <div className="bg-white rounded-[18px] border border-[#E6E3F7] shadow-sm overflow-hidden">
-            <div className="p-5 border-b border-[#E6E3F7] flex items-center justify-between">
-              <h3 className="font-bold text-sm text-[#1C1B3A]">
-                Daftar Pengajuan & Status Pinjaman Karyawan
-              </h3>
+            <div className="p-5 border-b border-[#E6E3F7] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h3 className="font-bold text-sm text-[#1C1B3A]">
+                  Daftar Pengajuan & Status Persetujuan Pinjaman Karyawan
+                </h3>
+                <p className="text-xs text-[#6F6B88]">
+                  Alur: Pengajuan Karyawan ➡️ Verifikasi HRD ➡️ Approval Koperasi ➡️ Pencairan
+                </p>
+              </div>
               <span className="text-xs text-[#6F6B88]">
-                Total: <strong>{loans.length} Transaksi</strong>
+                Total: <strong>{loans.length} Pengajuan</strong>
               </span>
             </div>
 
@@ -392,7 +455,7 @@ export const SavingsLoansView: React.FC = () => {
                     <th className="py-3.5 px-4">Tenor & Cicilan/Bln</th>
                     <th className="py-3.5 px-4">Tujuan</th>
                     <th className="py-3.5 px-4">Sumber Dana</th>
-                    <th className="py-3.5 px-4">Status</th>
+                    <th className="py-3.5 px-4">Tahapan Status</th>
                     <th className="py-3.5 px-4 text-right">Aksi Approval</th>
                   </tr>
                 </thead>
@@ -442,37 +505,78 @@ export const SavingsLoansView: React.FC = () => {
                       </td>
 
                       <td className="py-4 px-4">
-                        <span
-                          className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
-                            loan.status === "APPROVED" || loan.status === "ACTIVE"
-                              ? "bg-[#E6F9F0] text-[#2DBA7D]"
-                              : loan.status === "REJECTED"
-                              ? "bg-[#FFEBEB] text-[#E5484D]"
-                              : "bg-[#FFF4E5] text-[#D97706]"
-                          }`}
-                        >
-                          {loan.status}
-                        </span>
+                        {loan.status === "PENDING_HR" && (
+                          <span className="text-[10.5px] font-bold px-2.5 py-1 rounded-full bg-[#FFF4E5] text-[#D97706] border border-[#D97706]/30 inline-flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            1. Menunggu HRD
+                          </span>
+                        )}
+                        {loan.status === "PENDING_KOPERASI" && (
+                          <span className="text-[10.5px] font-bold px-2.5 py-1 rounded-full bg-[#F5F3FF] text-[#4A3AFF] border border-[#4A3AFF]/30 inline-flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            2. Menunggu Koperasi
+                          </span>
+                        )}
+                        {(loan.status === "APPROVED" || loan.status === "ACTIVE" || loan.status === "DISBURSED") && (
+                          <span className="text-[10.5px] font-bold px-2.5 py-1 rounded-full bg-[#E6F9F0] text-[#2DBA7D] border border-[#2DBA7D]/30 inline-flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" />
+                            {loan.status === "DISBURSED" ? "Dana Dicairkan" : "Disetujui"}
+                          </span>
+                        )}
+                        {loan.status === "REJECTED" && (
+                          <span className="text-[10.5px] font-bold px-2.5 py-1 rounded-full bg-[#FFEBEB] text-[#E5484D] border border-[#E5484D]/30 inline-flex items-center gap-1">
+                            <XCircle className="w-3 h-3" />
+                            Ditolak
+                          </span>
+                        )}
                       </td>
 
                       <td className="py-4 px-4 text-right">
-                        {loan.status.startsWith("PENDING") ? (
+                        {loan.status === "PENDING_HR" && (
                           <div className="flex items-center justify-end gap-1.5">
                             <button
-                              onClick={() => handleStatusChange(loan.id, "APPROVED")}
-                              className="px-3 py-1 rounded-full bg-[#2DBA7D] hover:bg-[#239962] text-white text-[11px] font-bold transition-all cursor-pointer"
+                              onClick={() => handleStatusChange(loan.id, "PENDING_KOPERASI")}
+                              className="px-2.5 py-1 rounded-full bg-[#4A3AFF] hover:bg-[#3828d1] text-white text-[10.5px] font-bold transition-all cursor-pointer shadow-xs"
                             >
-                              Setujui
+                              Verifikasi HRD
                             </button>
                             <button
                               onClick={() => handleStatusChange(loan.id, "REJECTED")}
-                              className="px-3 py-1 rounded-full bg-white border border-[#E5484D] text-[#E5484D] hover:bg-[#FFEBEB] text-[11px] font-bold transition-all cursor-pointer"
+                              className="px-2 py-1 rounded-full bg-white border border-[#E5484D] text-[#E5484D] hover:bg-[#FFEBEB] text-[10.5px] font-bold transition-all cursor-pointer"
                             >
                               Tolak
                             </button>
                           </div>
-                        ) : (
-                          <span className="text-[11px] text-[#6F6B88]">Selesai Diproses</span>
+                        )}
+
+                        {loan.status === "PENDING_KOPERASI" && (
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => handleStatusChange(loan.id, "APPROVED")}
+                              className="px-2.5 py-1 rounded-full bg-[#2DBA7D] hover:bg-[#239962] text-white text-[10.5px] font-bold transition-all cursor-pointer shadow-xs"
+                            >
+                              Setujui Koperasi
+                            </button>
+                            <button
+                              onClick={() => handleStatusChange(loan.id, "REJECTED")}
+                              className="px-2 py-1 rounded-full bg-white border border-[#E5484D] text-[#E5484D] hover:bg-[#FFEBEB] text-[10.5px] font-bold transition-all cursor-pointer"
+                            >
+                              Tolak
+                            </button>
+                          </div>
+                        )}
+
+                        {loan.status === "APPROVED" && (
+                          <button
+                            onClick={() => handleStatusChange(loan.id, "DISBURSED")}
+                            className="px-3 py-1 rounded-full bg-[#F5F3FF] border border-[#4A3AFF] text-[#4A3AFF] hover:bg-[#4A3AFF] hover:text-white text-[10.5px] font-bold transition-all cursor-pointer"
+                          >
+                            Cairkan Dana
+                          </button>
+                        )}
+
+                        {(loan.status === "DISBURSED" || loan.status === "ACTIVE" || loan.status === "REJECTED") && (
+                          <span className="text-[11px] text-[#6F6B88]">Selesai</span>
                         )}
                       </td>
                     </tr>

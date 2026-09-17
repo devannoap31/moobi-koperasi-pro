@@ -22,16 +22,26 @@ import {
   TenantUpdateRequest,
 } from "@/types";
 
-// Helper function to calculate dynamic loan limit based on Position & Tenure for PT Bhakti Idola Tama
-export function calculateDynamicLoanLimit(position: string, tenureYears: number, monthlySalary: number): number {
-  let multiplier = 2; // base multiplier x gaji
-  if (position === "Operator") multiplier = tenureYears >= 3 ? 3.5 : 2;
-  else if (position === "Staff") multiplier = tenureYears >= 3 ? 4.5 : 3;
-  else if (position === "Supervisor") multiplier = tenureYears >= 3 ? 6 : 4.5;
-  else if (position === "Manager") multiplier = tenureYears >= 3 ? 8 : 6;
-  else if (position === "Kepala Divisi") multiplier = 10;
+// Helper function to calculate dynamic loan limit based on PM Rule for PT Bhakti Idola Tama:
+// - Debt Service Ratio (DSR) max: 30% dari Gaji Pokok x 12 Bulan (setara 3.6x Gaji Bulanan)
+// - Syarat eligibilitas mutlak: Masa kerja minimal 1 tahun (tenureYears >= 1). Tanpa agunan/jaminan fisik (dijamin payroll).
+export function calculateDynamicLoanLimit(positionOrTenure: string | number, tenureYearsOrSalary?: number, monthlySalary?: number): number {
+  let tenure = 0;
+  let salary = 0;
 
-  return Math.round(monthlySalary * multiplier);
+  if (typeof positionOrTenure === "number") {
+    tenure = positionOrTenure;
+    salary = tenureYearsOrSalary || 0;
+  } else {
+    tenure = tenureYearsOrSalary || 0;
+    salary = monthlySalary || 0;
+  }
+
+  // Karyawan dengan masa kerja < 1 tahun belum berhak mengajukan pinjaman
+  if (tenure < 1) return 0;
+
+  // Rumus Baku PM: 30% dari Gaji Pokok x 12 Bulan (3.6x Gaji Pokok)
+  return Math.round(salary * 0.30 * 12);
 }
 
 export const initialBankLiquidity: BankLiquidityStatus = {
@@ -53,16 +63,16 @@ export const sampleEmployees: EmployeeMember[] = [
     position: "Supervisor",
     joinDate: "2021-03-15",
     tenureYears: 5,
-    monthlySalary: 10000000, // Rp 10.000.000 (sesuai contoh PM)
+    monthlySalary: 10000000, // Rp 10.000.000 (sesuai arahan PM)
     isCoopMember: true,
     memberSinceDate: "2021-04-01",
-    calculatedLoanLimit: calculateDynamicLoanLimit("Supervisor", 5, 10000000), // Rp 60.000.000
+    calculatedLoanLimit: calculateDynamicLoanLimit("Supervisor", 5, 10000000), // Rp 36.000.000 (30% x 10jt x 12)
     activeLoanAmount: 15000000,
-    remainingLoanLimit: 45000000,
+    remainingLoanLimit: 21000000,
     simpananWajib: 6000000,
     simpananSukarela: 12000000,
     simpananSukarelaLockedUntil: "2027-03-01", // Locked 1 year
-    isSimpananWajibWithdrawable: true, // >= 3 tahun anggota
+    isSimpananWajibWithdrawable: true, // >= 1 tahun masa kerja
     canteenMonthlyBill: 250000,
   },
   {
@@ -76,9 +86,9 @@ export const sampleEmployees: EmployeeMember[] = [
     monthlySalary: 7500000,
     isCoopMember: true,
     memberSinceDate: "2023-02-01",
-    calculatedLoanLimit: calculateDynamicLoanLimit("Staff", 3, 7500000), // Rp 33.750.000
+    calculatedLoanLimit: calculateDynamicLoanLimit("Staff", 3, 7500000), // Rp 27.000.000 (30% x 7.5jt x 12)
     activeLoanAmount: 10000000,
-    remainingLoanLimit: 23750000,
+    remainingLoanLimit: 17000000,
     simpananWajib: 3200000,
     simpananSukarela: 5000000,
     simpananSukarelaLockedUntil: "2026-12-31", // Locked 6 month
@@ -96,13 +106,13 @@ export const sampleEmployees: EmployeeMember[] = [
     monthlySalary: 5500000,
     isCoopMember: true,
     memberSinceDate: "2025-07-01",
-    calculatedLoanLimit: calculateDynamicLoanLimit("Operator", 1, 5500000), // Rp 11.000.000
+    calculatedLoanLimit: calculateDynamicLoanLimit("Operator", 1, 5500000), // Rp 19.800.000 (30% x 5.5jt x 12)
     activeLoanAmount: 0,
-    remainingLoanLimit: 11000000,
+    remainingLoanLimit: 19800000,
     simpananWajib: 1400000,
     simpananSukarela: 2000000,
     simpananSukarelaLockedUntil: "2027-01-15",
-    isSimpananWajibWithdrawable: false, // < 2 tahun belum bisa ditarik
+    isSimpananWajibWithdrawable: true, // Pas 1 tahun
     canteenMonthlyBill: 310000,
   },
   {
@@ -116,9 +126,9 @@ export const sampleEmployees: EmployeeMember[] = [
     monthlySalary: 18000000,
     isCoopMember: true,
     memberSinceDate: "2020-03-01",
-    calculatedLoanLimit: calculateDynamicLoanLimit("Manager", 6, 18000000), // Rp 144.000.000
+    calculatedLoanLimit: calculateDynamicLoanLimit("Manager", 6, 18000000), // Rp 64.800.000 (30% x 18jt x 12)
     activeLoanAmount: 30000000,
-    remainingLoanLimit: 114000000,
+    remainingLoanLimit: 34800000,
     simpananWajib: 15000000,
     simpananSukarela: 35000000,
     simpananSukarelaLockedUntil: "2027-06-30",
@@ -136,13 +146,13 @@ export const sampleEmployees: EmployeeMember[] = [
     monthlySalary: 7200000,
     isCoopMember: true,
     memberSinceDate: "2024-05-01",
-    calculatedLoanLimit: calculateDynamicLoanLimit("Staff", 2, 7200000), // Rp 21.600.000
+    calculatedLoanLimit: calculateDynamicLoanLimit("Staff", 2, 7200000), // Rp 25.920.000 (30% x 7.2jt x 12)
     activeLoanAmount: 0,
-    remainingLoanLimit: 21600000,
+    remainingLoanLimit: 25920000,
     simpananWajib: 2200000,
     simpananSukarela: 4000000,
     simpananSukarelaLockedUntil: "2026-11-01",
-    isSimpananWajibWithdrawable: false,
+    isSimpananWajibWithdrawable: true,
     canteenMonthlyBill: 125000,
   },
   {
@@ -156,14 +166,34 @@ export const sampleEmployees: EmployeeMember[] = [
     monthlySalary: 5800000,
     isCoopMember: true,
     memberSinceDate: "2022-10-01",
-    calculatedLoanLimit: calculateDynamicLoanLimit("Operator", 4, 5800000), // Rp 20.300.000
+    calculatedLoanLimit: calculateDynamicLoanLimit("Operator", 4, 5800000), // Rp 20.880.000 (30% x 5.8jt x 12)
     activeLoanAmount: 8000000,
-    remainingLoanLimit: 12300000,
+    remainingLoanLimit: 12880000,
     simpananWajib: 4500000,
     simpananSukarela: 6000000,
     simpananSukarelaLockedUntil: "2027-02-15",
     isSimpananWajibWithdrawable: true,
     canteenMonthlyBill: 295000,
+  },
+  {
+    id: "EMP-007",
+    nik: "BIT-2026-509",
+    name: "Rian Hidayat",
+    department: "Assembly & Packaging",
+    position: "Operator",
+    joinDate: "2026-03-01",
+    tenureYears: 0.5, // 6 Bulan (Belum memenuhi syarat minimal 1 tahun)
+    monthlySalary: 5200000,
+    isCoopMember: true,
+    memberSinceDate: "2026-03-15",
+    calculatedLoanLimit: calculateDynamicLoanLimit("Operator", 0.5, 5200000), // Rp 0 (Belum Eligible)
+    activeLoanAmount: 0,
+    remainingLoanLimit: 0,
+    simpananWajib: 600000,
+    simpananSukarela: 500000,
+    simpananSukarelaLockedUntil: "2027-03-15",
+    isSimpananWajibWithdrawable: false, // < 1 tahun
+    canteenMonthlyBill: 95000,
   },
 ];
 

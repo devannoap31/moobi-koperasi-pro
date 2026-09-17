@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -17,10 +17,7 @@ import {
   Store,
   MapPin,
   X,
-  Sparkles,
-  DollarSign,
   Calendar,
-  Layers,
 } from "lucide-react";
 import { useSidebar } from "@/context/SidebarContext";
 import { useMerchant } from "@/context/MerchantContext";
@@ -29,8 +26,7 @@ interface NavItem {
   name: string;
   href: string;
   icon: React.ElementType;
-  badge?: number;
-  badgeColor?: string;
+  badgeCount?: number;
 }
 
 export const MerchantSidebar: React.FC = () => {
@@ -39,38 +35,89 @@ export const MerchantSidebar: React.FC = () => {
   const { currentTenant, pendingOrdersCount } = useMerchant();
   const [hoveredNav, setHoveredNav] = useState<string | null>(null);
 
+  // Resizable Sidebar Width State (VSCode-like manual resize)
+  const [sidebarWidth, setSidebarWidth] = useState<number>(280);
+  const [isResizing, setIsResizing] = useState<boolean>(false);
+
+  useEffect(() => {
+    try {
+      const savedWidth = localStorage.getItem("moobi_merchant_sidebar_width");
+      if (savedWidth) {
+        const parsed = parseInt(savedWidth, 10);
+        if (parsed >= 200 && parsed <= 500) {
+          setSidebarWidth(parsed);
+        }
+      }
+    } catch {
+      // Ignore local storage errors in SSR
+    }
+  }, []);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const newWidth = Math.min(Math.max(moveEvent.clientX, 200), 500);
+      setSidebarWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+      setSidebarWidth((latestWidth) => {
+        try {
+          localStorage.setItem("moobi_merchant_sidebar_width", latestWidth.toString());
+        } catch {}
+        return latestWidth;
+      });
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+  };
+
   const navItems: NavItem[] = [
     {
       name: "POS Kasir Stand",
       href: "/canteen-portal/merchant/pos",
       icon: ShoppingBag,
+      badgeCount: 0,
     },
     {
       name: "Pesanan App Karyawan",
       href: "/canteen-portal/merchant/orders",
       icon: Smartphone,
-      badge: pendingOrdersCount > 0 ? pendingOrdersCount : undefined,
-      badgeColor: "bg-[#FFB547] text-[#1C1B3A]",
+      badgeCount: pendingOrdersCount > 0 ? pendingOrdersCount : 0,
     },
     {
       name: "Kelola Menu & Stok",
       href: "/canteen-portal/merchant/menu",
       icon: Package,
+      badgeCount: 0,
     },
     {
       name: "Pendapatan & Settlement",
       href: "/canteen-portal/merchant/finance",
       icon: TrendingUp,
+      badgeCount: 0,
     },
     {
       name: "Pengaturan & Info Stand Kantin",
       href: "/canteen-portal/merchant/store-settings",
       icon: Settings,
+      badgeCount: 0,
     },
     {
       name: "Informasi Akun & Update",
       href: "/canteen-portal/merchant/account",
       icon: UserCheck,
+      badgeCount: 0,
     },
   ];
 
@@ -84,6 +131,7 @@ export const MerchantSidebar: React.FC = () => {
             (pathname === "/canteen-portal/merchant" || pathname === "/canteen-portal/merchant/"));
 
         const itemHref = currentTenant?.id ? `${item.href}?tenantId=${currentTenant.id}` : item.href;
+        const hasActionNotification = !!item.badgeCount && item.badgeCount > 0;
 
         return (
           <li key={item.name} className="relative">
@@ -112,20 +160,16 @@ export const MerchantSidebar: React.FC = () => {
                 </span>
               )}
 
-              {/* Dynamic Badge */}
-              {item.badge !== undefined && item.badge > 0 && (!isCollapsed || isMobileView) && (
-                <span
-                  className={`text-[10px] font-black px-2 py-0.5 rounded-full shrink-0 ${
-                    item.badgeColor || "bg-[#FFB547] text-[#1C1B3A]"
-                  }`}
-                >
-                  {item.badge}
+              {/* Red Notification Badge */}
+              {hasActionNotification && (!isCollapsed || isMobileView) && (
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full shrink-0 bg-red-500 text-white min-w-[20px] text-center shadow-xs animate-pulse">
+                  {item.badgeCount}
                 </span>
               )}
 
-              {/* Dot badge on collapsed mode */}
-              {item.badge !== undefined && item.badge > 0 && isCollapsed && !isMobileView && (
-                <span className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-[#FFB547] ring-2 ring-white" />
+              {/* Red Dot badge on collapsed mode */}
+              {hasActionNotification && isCollapsed && !isMobileView && (
+                <span className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-white" />
               )}
             </Link>
 
@@ -133,9 +177,9 @@ export const MerchantSidebar: React.FC = () => {
             {isCollapsed && !isMobileView && hoveredNav === item.name && (
               <div className="absolute left-[calc(100%+12px)] top-1/2 -translate-y-1/2 bg-[#1C1B3A] text-white text-xs font-semibold px-3 py-1.5 rounded-[10px] shadow-xl whitespace-nowrap z-50 pointer-events-none animate-fadeIn flex items-center gap-2">
                 <span>{item.name}</span>
-                {item.badge !== undefined && item.badge > 0 && (
-                  <span className="text-[10px] font-black px-1.5 py-0.2 rounded-full bg-[#FFB547] text-[#1C1B3A]">
-                    {item.badge}
+                {hasActionNotification && (
+                  <span className="text-[10px] font-black px-1.5 py-0.2 rounded-full bg-red-500 text-white">
+                    {item.badgeCount}
                   </span>
                 )}
               </div>
@@ -152,9 +196,12 @@ export const MerchantSidebar: React.FC = () => {
       {/* 1. DESKTOP SIDEBAR (Visible only on desktop >= 1024px: hidden lg:flex)     */}
       {/* ========================================================================= */}
       <aside
-        className={`hidden lg:flex bg-white border-r border-[#E6E3F7] flex-col justify-between shrink-0 h-screen sticky top-0 z-40 transition-all duration-300 ease-in-out ${
-          isCollapsed ? "w-[78px] overflow-visible" : "w-72 overflow-y-auto"
-        }`}
+        style={{
+          width: isCollapsed ? "78px" : `${sidebarWidth}px`,
+        }}
+        className={`hidden lg:flex bg-white border-r border-[#E6E3F7] flex-col justify-between shrink-0 h-screen sticky top-0 z-40 relative ${
+          isResizing ? "transition-none" : "transition-[width] duration-200 ease-in-out"
+        } ${isCollapsed ? "overflow-visible" : "overflow-y-auto"}`}
       >
         <div className="flex flex-col overflow-visible">
           {/* Stand Branding Header */}
@@ -258,6 +305,19 @@ export const MerchantSidebar: React.FC = () => {
             {!isCollapsed && <span>Keluar Portal Kantin</span>}
           </Link>
         </div>
+
+        {/* Resizable Draggable Border Handle (VSCode-Style) */}
+        {!isCollapsed && (
+          <div
+            onMouseDown={handleMouseDown}
+            title="Tarik untuk mengatur lebar sidebar"
+            className={`absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-[#4A3AFF]/30 active:bg-[#4A3AFF] transition-colors z-50 group flex items-center justify-center ${
+              isResizing ? "bg-[#4A3AFF]" : "bg-transparent"
+            }`}
+          >
+            <div className="w-[2px] h-10 rounded-full bg-[#E6E3F7] group-hover:bg-[#4A3AFF] transition-colors" />
+          </div>
+        )}
       </aside>
 
       {/* ========================================================================= */}

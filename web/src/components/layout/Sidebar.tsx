@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -8,13 +8,11 @@ import {
   LayoutDashboard,
   Users,
   Wallet,
-  UtensilsCrossed,
   ReceiptText,
   Landmark,
   ShieldCheck,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
   X,
   LogOut,
   Store,
@@ -23,13 +21,62 @@ import { useSidebar } from "@/context/SidebarContext";
 
 interface SidebarProps {
   pendingLoansCount?: number;
+  pendingCanteenRequestsCount?: number;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   pendingLoansCount = 2,
+  pendingCanteenRequestsCount = 1,
 }) => {
   const pathname = usePathname();
   const { isCollapsed, toggleSidebar, isMobileOpen, closeMobileSidebar } = useSidebar();
+
+  // Resizable Sidebar Width State (VSCode-like manual resize)
+  const [sidebarWidth, setSidebarWidth] = useState<number>(280);
+  const [isResizing, setIsResizing] = useState<boolean>(false);
+
+  useEffect(() => {
+    try {
+      const savedWidth = localStorage.getItem("moobi_admin_sidebar_width");
+      if (savedWidth) {
+        const parsed = parseInt(savedWidth, 10);
+        if (parsed >= 200 && parsed <= 500) {
+          setSidebarWidth(parsed);
+        }
+      }
+    } catch {
+      // Ignore local storage errors in SSR
+    }
+  }, []);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const newWidth = Math.min(Math.max(moveEvent.clientX, 200), 500);
+      setSidebarWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+      setSidebarWidth((latestWidth) => {
+        try {
+          localStorage.setItem("moobi_admin_sidebar_width", latestWidth.toString());
+        } catch {}
+        return latestWidth;
+      });
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+  };
 
   const navItems = [
     {
@@ -37,7 +84,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: "Dashboard Utama",
       category: "Ringkasan Eksekutif & Kas",
       icon: LayoutDashboard,
-      badge: null,
+      badgeCount: 0,
       isActive: pathname === "/" || pathname === "/dashboard",
     },
     {
@@ -45,8 +92,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: "Data Karyawan BIT",
       category: "Anggota & Limit Dinamis",
       icon: Users,
-      badge: "Karyawan BIT",
-      badgeType: "primary",
+      badgeCount: 0,
       isActive: pathname.startsWith("/employees"),
     },
     {
@@ -54,8 +100,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: "Simpan Pinjam",
       category: "Wajib/Sukarela & Approval",
       icon: Wallet,
-      badge: pendingLoansCount > 0 ? `${pendingLoansCount} Pengajuan` : null,
-      badgeType: "warning",
+      badgeCount: pendingLoansCount,
       isActive: pathname.startsWith("/savings-loans"),
     },
     {
@@ -63,8 +108,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: "Kelola Mitra Kantin",
       category: "Multi-Tenant & Arus Kas",
       icon: Store,
-      badge: "Multi-Tenant",
-      badgeType: "primary",
+      badgeCount: pendingCanteenRequestsCount,
       isActive: pathname.startsWith("/canteen"),
     },
     {
@@ -72,8 +116,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: "Rekap Potong Gaji",
       category: "Integrasi Payroll HRD",
       icon: ReceiptText,
-      badge: "Auto Payroll",
-      badgeType: "success",
+      badgeCount: 0,
       isActive: pathname.startsWith("/payroll"),
     },
     {
@@ -81,8 +124,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: "Likuiditas & Bank Partner",
       category: "Bank Mandiri Channeling",
       icon: Landmark,
-      badge: "Top-Up Ready",
-      badgeType: "primary",
+      badgeCount: 0,
       isActive: pathname.startsWith("/bank-channeling"),
     },
     {
@@ -90,8 +132,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: "Hak Akses & User",
       category: "Atur Akses Modul & Akun",
       icon: ShieldCheck,
-      badge: "Superadmin",
-      badgeType: "primary",
+      badgeCount: 0,
       isActive: pathname.startsWith("/users"),
     },
   ];
@@ -102,9 +143,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* 1. DESKTOP SIDEBAR (Visible only on desktop >= 1024px: hidden lg:flex)     */}
       {/* ========================================================================= */}
       <aside
-        className={`hidden lg:flex bg-white border-r border-[#E6E3F7] flex-col justify-between shrink-0 h-screen sticky top-0 z-40 transition-all duration-300 ease-in-out select-none ${
-          isCollapsed ? "w-[76px] overflow-visible" : "w-72 overflow-y-auto"
-        }`}
+        style={{
+          width: isCollapsed ? "76px" : `${sidebarWidth}px`,
+        }}
+        className={`hidden lg:flex bg-white border-r border-[#E6E3F7] flex-col justify-between shrink-0 h-screen sticky top-0 z-40 relative ${
+          isResizing ? "transition-none" : "transition-[width] duration-200 ease-in-out"
+        } ${isCollapsed ? "overflow-visible" : "overflow-y-auto"}`}
       >
         {/* Brand Header & Desktop Collapse / Expand Toggle */}
         <div className="flex flex-col overflow-visible">
@@ -187,6 +231,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {navItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = item.isActive;
+                  const hasActionNotification = item.badgeCount > 0;
+
                   return (
                     <div key={item.href} className="relative group overflow-visible">
                       <Link
@@ -201,7 +247,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             : "text-[#212529] hover:bg-[#F5F3FF] hover:text-[#4A3AFF]"
                         }`}
                       >
-                        <div className={`flex items-center ${isCollapsed ? "justify-center" : "gap-3"}`}>
+                        <div className={`flex items-center min-w-0 ${isCollapsed ? "justify-center" : "gap-3"}`}>
                           <Icon
                             className={`w-5 h-5 shrink-0 ${
                               isActive ? "text-white" : "text-[#6F6B88] group-hover:text-[#4A3AFF]"
@@ -210,26 +256,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           {!isCollapsed && <span className="truncate">{item.label}</span>}
                         </div>
 
-                        {!isCollapsed && item.badge && (
-                          <span
-                            className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
-                              isActive
-                                ? "bg-white/20 text-white"
-                                : item.badgeType === "warning"
-                                ? "bg-[#FFF4E5] text-[#D97706]"
-                                : item.badgeType === "success"
-                                ? "bg-[#E6F9F0] text-[#2DBA7D]"
-                                : item.badgeType === "primary"
-                                ? "bg-[#F5F3FF] text-[#4A3AFF]"
-                                : "bg-[#F5F3FF] text-[#6F6B88]"
-                            }`}
-                          >
-                            {item.badge}
+                        {/* Red Action-Required Number Badge (Only shown when action needed) */}
+                        {!isCollapsed && hasActionNotification && (
+                          <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-full bg-red-500 text-white shrink-0 min-w-[20px] text-center shadow-xs animate-pulse">
+                            {item.badgeCount}
                           </span>
+                        )}
+
+                        {/* Red dot indicator when collapsed */}
+                        {isCollapsed && hasActionNotification && (
+                          <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-white" />
                         )}
                       </Link>
 
-                      {/* SIAKAD Hover Flyout Tooltip on Collapsed Desktop */}
+                      {/* Tooltip on Collapsed Desktop */}
                       {isCollapsed && (
                         <div className="absolute left-[calc(100%+14px)] top-1/2 -translate-y-1/2 z-50 pointer-events-none opacity-0 invisible group-hover:opacity-100 group-hover:visible group-hover:translate-x-0 -translate-x-2 transition-all duration-150">
                           <div className="bg-[#1C1B3A] text-white py-2.5 px-4 rounded-[14px] shadow-2xl border border-white/10 flex items-center gap-3 whitespace-nowrap">
@@ -238,17 +278,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                               <p className="text-xs font-bold text-white tracking-wide">{item.label}</p>
                               <p className="text-[10.5px] text-white/70">{item.category}</p>
                             </div>
-                            {item.badge && (
-                              <span
-                                className={`text-[9.5px] font-bold px-2 py-0.5 rounded-full ${
-                                  item.badgeType === "warning"
-                                    ? "bg-[#FFB547] text-[#1C1B3A]"
-                                    : item.badgeType === "success"
-                                    ? "bg-[#2DBA7D] text-white"
-                                    : "bg-[#4A3AFF] text-white"
-                                }`}
-                              >
-                                {item.badge}
+                            {hasActionNotification && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500 text-white">
+                                {item.badgeCount} tindakan
                               </span>
                             )}
                           </div>
@@ -262,26 +294,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        {/* Desktop Footer Card / Status */}
-        <div className="p-3 overflow-visible">
+        {/* Desktop Footer (Clean User & Expand Action without Bank Mandiri card) */}
+        <div className="p-3 border-t border-[#E6E3F7]/70 bg-white overflow-visible">
           {!isCollapsed ? (
-            <div className="p-4 rounded-[18px] bg-[#F5F3FF] border border-[#E6E3F7]">
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-[#2DBA7D] animate-pulse"></div>
-                  <span className="text-xs font-semibold text-[#1C1B3A]">Bank Mandiri</span>
-                </div>
-                <span className="text-[10px] font-bold text-[#4A3AFF]">Ready</span>
-              </div>
-              <p className="text-[11px] text-[#6F6B88] leading-relaxed mb-2.5">
-                Terkoneksi ke payroll PT Bhakti Idola Tama untuk top-up dana.
-              </p>
+            <div className="flex items-center justify-between p-1">
               <Link
-                href="/bank-channeling"
-                className="w-full text-xs font-semibold text-[#4A3AFF] flex items-center justify-between py-1.5 px-2.5 rounded-full bg-white border border-[#E6E3F7] hover:bg-[#4A3AFF] hover:text-white transition-colors cursor-pointer"
+                href="/users"
+                className="flex items-center gap-2.5 text-left group min-w-0"
               >
-                <span>Cek Likuiditas</span>
-                <ChevronRight className="w-3.5 h-3.5" />
+                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#4A3AFF] to-[#8E79F5] text-white flex items-center justify-center font-bold text-[11px] shrink-0 shadow-xs">
+                  BIT
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-[#1C1B3A] group-hover:text-[#4A3AFF] transition-colors leading-tight truncate">
+                    Pengurus Kopkar
+                  </p>
+                  <p className="text-[10px] text-[#6F6B88] leading-tight truncate">Superadmin &amp; HR</p>
+                </div>
+              </Link>
+
+              <Link
+                href="/login"
+                title="Keluar / Logout"
+                className="p-2 rounded-full bg-white hover:bg-red-50 text-[#6F6B88] hover:text-[#EF4444] border border-[#E6E3F7] transition-colors shrink-0 aspect-square cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" />
               </Link>
             </div>
           ) : (
@@ -303,6 +340,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           )}
         </div>
+
+        {/* Resizable Draggable Border Handle (VSCode-Style) */}
+        {!isCollapsed && (
+          <div
+            onMouseDown={handleMouseDown}
+            title="Tarik untuk mengatur lebar sidebar"
+            className={`absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-[#4A3AFF]/30 active:bg-[#4A3AFF] transition-colors z-50 group flex items-center justify-center ${
+              isResizing ? "bg-[#4A3AFF]" : "bg-transparent"
+            }`}
+          >
+            <div className="w-[2px] h-10 rounded-full bg-[#E6E3F7] group-hover:bg-[#4A3AFF] transition-colors" />
+          </div>
+        )}
       </aside>
 
       {/* ========================================================================= */}
@@ -369,6 +419,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = item.isActive;
+              const hasActionNotification = item.badgeCount > 0;
+
               return (
                 <Link
                   key={item.href}
@@ -396,19 +448,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </div>
                   </div>
 
-                  {item.badge && (
-                    <span
-                      className={`text-[9.5px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
-                        isActive
-                          ? "bg-white/20 text-white"
-                          : item.badgeType === "warning"
-                          ? "bg-[#FFF4E5] text-[#D97706]"
-                          : item.badgeType === "success"
-                          ? "bg-[#E6F9F0] text-[#2DBA7D]"
-                          : "bg-[#F5F3FF] text-[#4A3AFF]"
-                      }`}
-                    >
-                      {item.badge}
+                  {hasActionNotification && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500 text-white shrink-0 min-w-[20px] text-center shadow-xs">
+                      {item.badgeCount}
                     </span>
                   )}
                 </Link>
@@ -417,23 +459,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </nav>
         </div>
 
-        {/* Mobile Footer Status & User */}
+        {/* Mobile Footer User & Logout (Clean without Bank Mandiri card) */}
         <div className="p-4 border-t border-[#E6E3F7] space-y-3 bg-[#FAFAFC] shrink-0">
-          <div className="p-3 rounded-[14px] bg-[#F5F3FF] border border-[#E6E3F7]">
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-[#2DBA7D] animate-pulse"></div>
-                <span className="text-[11px] font-bold text-[#1C1B3A]">Bank Mandiri Ready</span>
-              </div>
-              <span className="text-[9px] font-bold text-[#4A3AFF] px-1.5 py-0.5 bg-white rounded-full">
-                Top-Up
-              </span>
-            </div>
-            <p className="text-[10px] text-[#6F6B88] leading-tight">
-              Terkoneksi payroll PT Bhakti Idola Tama.
-            </p>
-          </div>
-
           <div className="flex items-center justify-between pt-1">
             <Link
               href="/users"
@@ -447,7 +474,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <p className="text-xs font-bold text-[#1C1B3A] group-hover:text-[#4A3AFF] transition-colors leading-tight truncate">
                   Pengurus Kopkar
                 </p>
-                <p className="text-[10px] text-[#6F6B88] leading-tight truncate">Superadmin & HR</p>
+                <p className="text-[10px] text-[#6F6B88] leading-tight truncate">Superadmin &amp; HR</p>
               </div>
             </Link>
 

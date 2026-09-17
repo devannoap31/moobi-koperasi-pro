@@ -42,18 +42,20 @@ import {
   sampleEmployeeCanteenActivities,
   sampleCanteenSettlements,
   sampleProducts,
+  sampleTenantUpdateRequests,
 } from "@/data/mockData";
 import {
   CanteenTenant,
   TenantStatus,
   EmployeeCanteenActivity,
   CanteenSettlement,
+  TenantUpdateRequest,
 } from "@/types";
 import { useDebounce } from "@/hooks/useDebounce";
 
 export const SuperadminCanteenManagementView: React.FC = () => {
-  // Active Tab: "TENANTS" | "ACTIVITIES" | "SETTLEMENT" | "SETTINGS"
-  const [activeTab, setActiveTab] = useState<"TENANTS" | "ACTIVITIES" | "SETTLEMENT" | "SETTINGS">("TENANTS");
+  // Active Tab: "TENANTS" | "ACTIVITIES" | "SETTLEMENT" | "UPDATES" | "SETTINGS"
+  const [activeTab, setActiveTab] = useState<"TENANTS" | "ACTIVITIES" | "SETTLEMENT" | "UPDATES" | "SETTINGS">("TENANTS");
 
   // Tenants State
   const [tenants, setTenants] = useState<CanteenTenant[]>(sampleCanteenTenants);
@@ -61,10 +63,17 @@ export const SuperadminCanteenManagementView: React.FC = () => {
   const [tenantSearchTerm, setTenantSearchTerm] = useState("");
   const debouncedTenantSearch = useDebounce(tenantSearchTerm, 300);
 
-  // Modal States
+  // Modal States for Tenants
   const [selectedTenantForAction, setSelectedTenantForAction] = useState<CanteenTenant | null>(null);
   const [actionType, setActionType] = useState<"APPROVE" | "REJECT" | "SUSPEND" | "REACTIVATE" | "DELETE" | "DETAIL" | null>(null);
   const [actionNote, setActionNote] = useState("");
+
+  // Update Requests State
+  const [updateRequests, setUpdateRequests] = useState<TenantUpdateRequest[]>(sampleTenantUpdateRequests);
+  const [updateRequestFilter, setUpdateRequestFilter] = useState<string>("ALL");
+  const [selectedUpdateRequestForAction, setSelectedUpdateRequestForAction] = useState<TenantUpdateRequest | null>(null);
+  const [updateActionType, setUpdateActionType] = useState<"APPROVE" | "REJECT" | null>(null);
+  const [updateActionNote, setUpdateActionNote] = useState("");
 
   // Employee Activities State
   const [activities, setActivities] = useState<EmployeeCanteenActivity[]>(sampleEmployeeCanteenActivities);
@@ -93,6 +102,9 @@ export const SuperadminCanteenManagementView: React.FC = () => {
   const activeTenantsCount = tenants.filter((t) => t.status === "ACTIVE").length;
   const pendingTenantsCount = tenants.filter((t) => t.status === "PENDING_APPROVAL").length;
   const suspendedTenantsCount = tenants.filter((t) => t.status === "SUSPENDED").length;
+  const pendingUpdateRequestsCount = updateRequests.filter(
+    (r) => r.status === "PENDING_APPROVAL"
+  ).length;
 
   const totalCanteenRevenue = tenants.reduce((acc, t) => acc + t.totalRevenue, 0);
   const totalPendingSettlement = tenants.reduce((acc, t) => acc + t.pendingSettlement, 0);
@@ -107,6 +119,12 @@ export const SuperadminCanteenManagementView: React.FC = () => {
       t.location.toLowerCase().includes(debouncedTenantSearch.toLowerCase()) ||
       t.category.toLowerCase().includes(debouncedTenantSearch.toLowerCase());
     return matchStatus && matchSearch;
+  });
+
+  // Filter Update Requests
+  const filteredUpdateRequests = updateRequests.filter((req) => {
+    if (updateRequestFilter === "ALL") return true;
+    return req.status === updateRequestFilter;
   });
 
   // Filter Activities
@@ -130,6 +148,72 @@ export const SuperadminCanteenManagementView: React.FC = () => {
     setSelectedTenantForAction(tenant);
     setActionType(type);
     setActionNote("");
+  };
+
+  // Handle Update Request Actions
+  const handleOpenUpdateRequestModal = (
+    req: TenantUpdateRequest,
+    type: "APPROVE" | "REJECT"
+  ) => {
+    setSelectedUpdateRequestForAction(req);
+    setUpdateActionType(type);
+    setUpdateActionNote("");
+  };
+
+  const handleExecuteUpdateRequestAction = () => {
+    if (!selectedUpdateRequestForAction || !updateActionType) return;
+    const req = selectedUpdateRequestForAction;
+
+    if (updateActionType === "APPROVE") {
+      // Apply updates to tenant
+      setTenants((prevTenants) =>
+        prevTenants.map((t) => {
+          if (t.id === req.tenantId) {
+            return {
+              ...t,
+              ...req.requestedFields,
+            };
+          }
+          return t;
+        })
+      );
+
+      // Mark update request as APPROVED
+      setUpdateRequests((prev) =>
+        prev.map((r) =>
+          r.id === req.id
+            ? {
+                ...r,
+                status: "APPROVED",
+                reviewedAt: new Date().toISOString().replace("T", " ").substring(0, 16),
+                adminNotes: updateActionNote || "Disetujui oleh Superadmin Kopkar BIT",
+              }
+            : r
+        )
+      );
+
+      showToast(`Pembaruan data stand "${req.tenantName}" berhasil disetujui & diterapkan!`);
+    } else {
+      // Mark update request as REJECTED
+      setUpdateRequests((prev) =>
+        prev.map((r) =>
+          r.id === req.id
+            ? {
+                ...r,
+                status: "REJECTED",
+                reviewedAt: new Date().toISOString().replace("T", " ").substring(0, 16),
+                adminNotes: updateActionNote || "Ditolak oleh Superadmin (data tidak sesuai)",
+              }
+            : r
+        )
+      );
+
+      showToast(`Pengajuan pembaruan data untuk stand "${req.tenantName}" telah ditolak.`, "info");
+    }
+
+    setUpdateActionType(null);
+    setSelectedUpdateRequestForAction(null);
+    setUpdateActionNote("");
   };
 
   const handleExecuteTenantAction = () => {
@@ -209,7 +293,7 @@ export const SuperadminCanteenManagementView: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 select-none font-sans">
+    <div className="space-y-6 font-sans">
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 animate-fadeIn">
@@ -366,6 +450,23 @@ export const SuperadminCanteenManagementView: React.FC = () => {
         >
           <DollarSign className="w-3.5 h-3.5" />
           <span>Arus Kas &amp; Settlement Payroll</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("UPDATES")}
+          className={`py-2 px-4 rounded-full text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+            activeTab === "UPDATES"
+              ? "bg-[#4A3AFF] text-white shadow-sm shadow-[#4A3AFF]/25"
+              : "bg-white text-[#6F6B88] border border-[#E6E3F7] hover:bg-[#F5F3FF] hover:text-[#4A3AFF]"
+          }`}
+        >
+          <FileText className="w-3.5 h-3.5" />
+          <span>Persetujuan Update Data Stand</span>
+          {pendingUpdateRequestsCount > 0 && (
+            <span className="w-4 h-4 rounded-full bg-[#FFB547] text-[#1C1B3A] text-[9px] font-bold flex items-center justify-center">
+              {pendingUpdateRequestsCount}
+            </span>
+          )}
         </button>
 
         <button
@@ -816,7 +917,214 @@ export const SuperadminCanteenManagementView: React.FC = () => {
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 4: BAGI HASIL & BROADCAST MITRA (IDE TAMBAHAN)                        */}
+      {/* TAB 4: PERSETUJUAN PEMBARUAN DATA STAND (MULTI-TENANT PROFILE UPDATES)    */}
+      {/* ========================================================================= */}
+      {activeTab === "UPDATES" && (
+        <div className="bg-white rounded-[22px] border border-[#E6E3F7] p-5 shadow-sm space-y-4">
+          {/* Header & Filter Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E6E3F7] pb-3.5">
+            <div>
+              <h3 className="text-sm font-bold text-[#1C1B3A]">
+                Pengajuan Perubahan Data Stand &amp; Rekening Pencairan
+              </h3>
+              <p className="text-xs text-[#6F6B88]">
+                Mitra kantin mengajukan permohonan pembaruan data legalitas, kepemilikan, atau rekening bank untuk verifikasi Superadmin.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+              <button
+                onClick={() => setUpdateRequestFilter("ALL")}
+                className={`py-1.5 px-3 rounded-full text-xs font-bold cursor-pointer ${
+                  updateRequestFilter === "ALL"
+                    ? "bg-[#4A3AFF] text-white"
+                    : "bg-[#FAFAFC] text-[#6F6B88] border border-[#E6E3F7]"
+                }`}
+              >
+                Semua ({updateRequests.length})
+              </button>
+              <button
+                onClick={() => setUpdateRequestFilter("PENDING_APPROVAL")}
+                className={`py-1.5 px-3 rounded-full text-xs font-bold cursor-pointer ${
+                  updateRequestFilter === "PENDING_APPROVAL"
+                    ? "bg-[#FFB547] text-[#1C1B3A]"
+                    : "bg-[#FAFAFC] text-[#6F6B88] border border-[#E6E3F7]"
+                }`}
+              >
+                Menunggu ({pendingUpdateRequestsCount})
+              </button>
+              <button
+                onClick={() => setUpdateRequestFilter("APPROVED")}
+                className={`py-1.5 px-3 rounded-full text-xs font-bold cursor-pointer ${
+                  updateRequestFilter === "APPROVED"
+                    ? "bg-[#2DBA7D] text-white"
+                    : "bg-[#FAFAFC] text-[#6F6B88] border border-[#E6E3F7]"
+                }`}
+              >
+                Disetujui ({updateRequests.filter((r) => r.status === "APPROVED").length})
+              </button>
+              <button
+                onClick={() => setUpdateRequestFilter("REJECTED")}
+                className={`py-1.5 px-3 rounded-full text-xs font-bold cursor-pointer ${
+                  updateRequestFilter === "REJECTED"
+                    ? "bg-red-600 text-white"
+                    : "bg-[#FAFAFC] text-[#6F6B88] border border-[#E6E3F7]"
+                }`}
+              >
+                Ditolak ({updateRequests.filter((r) => r.status === "REJECTED").length})
+              </button>
+            </div>
+          </div>
+
+          {/* List of Update Requests */}
+          {filteredUpdateRequests.length === 0 ? (
+            <div className="py-12 text-center text-xs text-[#6F6B88]">
+              <FileText className="w-8 h-8 text-[#A09CB5] mx-auto mb-2 opacity-50" />
+              <p className="font-bold text-[#1C1B3A]">Tidak ada pengajuan pembaruan data.</p>
+              <p>Pengajuan dari pemilik stand akan muncul di sini secara real-time.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredUpdateRequests.map((req) => {
+                const currentTenant = tenants.find((t) => t.id === req.tenantId);
+                const fieldLabels: Record<string, string> = {
+                  name: "Nama Stand Kantin",
+                  ownerName: "Nama Pemilik Stand",
+                  ownerNik: "NIK Pemilik",
+                  phone: "Nomor WhatsApp / HP",
+                  bankName: "Nama Bank Pencairan",
+                  bankAccountNumber: "Nomor Rekening",
+                  bankAccountName: "Atas Nama Rekening",
+                  category: "Kategori Stand",
+                  location: "Lokasi Stand di Pabrik",
+                };
+
+                return (
+                  <div
+                    key={req.id}
+                    className="p-4 rounded-[18px] border border-[#E6E3F7] bg-[#FAFAFC] hover:border-[#4A3AFF]/40 transition-all space-y-3"
+                  >
+                    {/* Header */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E6E3F7] pb-2.5">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-[#F5F3FF] text-[#4A3AFF] flex items-center justify-center font-bold text-xs border border-[#E6E3F7]">
+                          <Store className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-xs text-[#1C1B3A]">{req.tenantName}</span>
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white border border-[#E6E3F7] text-[#6F6B88]">
+                              ID: {req.tenantId}
+                            </span>
+                          </div>
+                          <p className="text-[10.5px] text-[#6F6B88]">
+                            Diajukan pada: <strong>{req.submittedAt}</strong>
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Status Badge */}
+                      <div>
+                        {req.status === "PENDING_APPROVAL" && (
+                          <span className="text-[10.5px] font-bold px-3 py-1 rounded-full bg-[#FFF4E5] text-[#D97706] border border-[#FDE68A] flex items-center gap-1.5">
+                            <Clock className="w-3 h-3" />
+                            <span>Menunggu Persetujuan</span>
+                          </span>
+                        )}
+                        {req.status === "APPROVED" && (
+                          <span className="text-[10.5px] font-bold px-3 py-1 rounded-full bg-[#E6F9F0] text-[#2DBA7D] border border-[#A7F3D0] flex items-center gap-1.5">
+                            <CheckCircle2 className="w-3 h-3" />
+                            <span>Disetujui &amp; Diterapkan ({req.reviewedAt})</span>
+                          </span>
+                        )}
+                        {req.status === "REJECTED" && (
+                          <span className="text-[10.5px] font-bold px-3 py-1 rounded-full bg-red-50 text-red-600 border border-red-200 flex items-center gap-1.5">
+                            <X className="w-3 h-3" />
+                            <span>Ditolak ({req.reviewedAt})</span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Diff / Changes Table */}
+                    <div className="bg-white rounded-[14px] border border-[#E6E3F7] p-3 overflow-x-auto">
+                      <p className="text-[11px] font-bold text-[#6F6B88] mb-2">
+                        Rincian Perubahan Data yang Diajukan:
+                      </p>
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr className="border-b border-[#E6E3F7] text-[#6F6B88] text-left text-[11px]">
+                            <th className="pb-1.5 font-bold">Kolom Data</th>
+                            <th className="pb-1.5 font-bold">Data Sebelumnya (Saat Ini)</th>
+                            <th className="pb-1.5 font-bold text-[#4A3AFF]">Data Baru yang Diajukan</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#F5F3FF]">
+                          {Object.entries(req.requestedFields).map(([key, newVal]) => {
+                            const oldVal = currentTenant ? (currentTenant as any)[key] : "-";
+                            return (
+                              <tr key={key} className="py-2">
+                                <td className="py-2 font-semibold text-[#1C1B3A]">
+                                  {fieldLabels[key] || key}
+                                </td>
+                                <td className="py-2 text-[#6F6B88]">
+                                  {String(oldVal || "-")}
+                                </td>
+                                <td className="py-2 font-bold text-[#4A3AFF] bg-[#F5F3FF]/50 px-2 rounded">
+                                  {String(newVal || "-")}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Reason */}
+                    <div className="p-3 rounded-[12px] bg-[#FFFBEB] border border-[#FDE68A] text-xs space-y-0.5">
+                      <span className="font-bold text-[#92400E]">Alasan Pembaruan:</span>
+                      <p className="text-[#B45309]">{req.reason}</p>
+                    </div>
+
+                    {/* Admin Notes if reviewed */}
+                    {req.adminNotes && (
+                      <div className="p-3 rounded-[12px] bg-white border border-[#E6E3F7] text-xs space-y-0.5">
+                        <span className="font-bold text-[#1C1B3A]">Catatan Superadmin:</span>
+                        <p className="text-[#6F6B88]">{req.adminNotes}</p>
+                      </div>
+                    )}
+
+                    {/* Action Bar for Pending Requests */}
+                    {req.status === "PENDING_APPROVAL" && (
+                      <div className="flex items-center justify-end gap-2 pt-1 border-t border-[#E6E3F7]">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenUpdateRequestModal(req, "REJECT")}
+                          className="py-2 px-4 rounded-full bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                          <span>Tolak Pengajuan</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenUpdateRequestModal(req, "APPROVE")}
+                          className="py-2 px-5 rounded-full bg-[#2DBA7D] hover:bg-[#259b67] text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                          <span>Setujui &amp; Terapkan ke Stand</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 5: BAGI HASIL & BROADCAST MITRA (IDE TAMBAHAN)                        */}
       {/* ========================================================================= */}
       {activeTab === "SETTINGS" && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1001,6 +1309,104 @@ export const SuperadminCanteenManagementView: React.FC = () => {
                 {actionType === "SUSPEND" && "Ya, Bekukan Akun"}
                 {actionType === "REACTIVATE" && "Ya, Aktifkan Kembali"}
                 {actionType === "DELETE" && "Hapus Permanen"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* UPDATE REQUEST ACTION MODAL (APPROVE / REJECT)                            */}
+      {/* ========================================================================= */}
+      {updateActionType && selectedUpdateRequestForAction && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white rounded-[22px] border border-[#E6E3F7] shadow-2xl w-full max-w-md p-6 space-y-4">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-[#E6E3F7] pb-3">
+              <div className="flex items-center gap-2">
+                {updateActionType === "APPROVE" ? (
+                  <CheckCircle2 className="w-5 h-5 text-[#2DBA7D]" />
+                ) : (
+                  <X className="w-5 h-5 text-red-500" />
+                )}
+                <h3 className="text-sm font-bold text-[#1C1B3A]">
+                  {updateActionType === "APPROVE"
+                    ? "Setujui Perubahan Data Stand"
+                    : "Tolak Pengajuan Perubahan Data"}
+                </h3>
+              </div>
+              <button
+                onClick={() => {
+                  setUpdateActionType(null);
+                  setSelectedUpdateRequestForAction(null);
+                }}
+                className="w-7 h-7 rounded-full hover:bg-[#F5F3FF] text-[#6F6B88] flex items-center justify-center cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Target Tenant Info */}
+            <div className="p-3 rounded-[14px] bg-[#F5F3FF] border border-[#E6E3F7] space-y-1 text-xs">
+              <p className="font-bold text-[#1C1B3A]">
+                {selectedUpdateRequestForAction.tenantName} ({selectedUpdateRequestForAction.tenantId})
+              </p>
+              <p className="text-[11px] text-[#6F6B88]">
+                Alasan pengajuan: <em>&ldquo;{selectedUpdateRequestForAction.reason}&rdquo;</em>
+              </p>
+            </div>
+
+            {/* Explanatory Text */}
+            <div className="text-xs text-[#6F6B88]">
+              {updateActionType === "APPROVE" ? (
+                <p>
+                  Dengan menyetujui, data stand dan nomor rekening pencairan akan <strong>otomatis diperbarui</strong> pada sistem koperasi dan seluruh jadwal settlement berikutnya.
+                </p>
+              ) : (
+                <p>
+                  Pengajuan akan ditolak dan stand mitra akan menerima catatan penolakan.
+                </p>
+              )}
+            </div>
+
+            {/* Optional Note */}
+            <div className="space-y-1 text-xs">
+              <label className="font-bold text-[#1C1B3A]">Catatan Admin (Opsional):</label>
+              <input
+                type="text"
+                value={updateActionNote}
+                onChange={(e) => setUpdateActionNote(e.target.value)}
+                placeholder={
+                  updateActionType === "APPROVE"
+                    ? "Contoh: Dokumen rekening bank telah diverifikasi"
+                    : "Contoh: Foto buku tabungan tidak jelas / nama pemilik berbeda"
+                }
+                className="w-full bg-[#FAFAFC] border border-[#E6E3F7] rounded-[10px] p-2 text-xs focus:outline-none focus:border-[#4A3AFF]"
+              />
+            </div>
+
+            {/* Buttons */}
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setUpdateActionType(null);
+                  setSelectedUpdateRequestForAction(null);
+                }}
+                className="flex-1 py-2.5 rounded-full bg-white border border-[#E6E3F7] text-[#6F6B88] font-bold text-xs cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleExecuteUpdateRequestAction}
+                className={`flex-1 py-2.5 rounded-full text-white font-bold text-xs cursor-pointer ${
+                  updateActionType === "APPROVE"
+                    ? "bg-[#2DBA7D] hover:bg-[#259b67]"
+                    : "bg-red-600 hover:bg-red-700"
+                }`}
+              >
+                {updateActionType === "APPROVE" ? "Ya, Terapkan Perubahan" : "Ya, Tolak Pengajuan"}
               </button>
             </div>
           </div>

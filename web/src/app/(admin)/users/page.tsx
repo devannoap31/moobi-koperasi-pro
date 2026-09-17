@@ -1,5 +1,5 @@
-import { UserManagementView } from "@/components/views/UserManagementView";
 import { Metadata } from "next";
+import { UserManagementView } from "@/components/views/UserManagementView";
 
 export const metadata: Metadata = {
   title: "Hak Akses & Manajemen User - Kopkar PT Bhakti Idola Tama",

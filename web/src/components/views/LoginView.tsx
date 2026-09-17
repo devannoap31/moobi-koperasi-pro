@@ -94,7 +94,7 @@ export const LoginView: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col justify-between items-center bg-[#F8F7FD] select-none font-sans p-4 sm:p-6 relative overflow-x-hidden">
+    <div className="min-h-screen w-full flex flex-col justify-between items-center bg-[#F8F7FD] font-sans p-4 sm:p-6 relative overflow-x-hidden">
       {/* Subtle Background Glow Elements */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-[#4A3AFF]/5 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -245,11 +245,10 @@ export const LoginView: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading || !!successUser}
-              className={`w-full py-3 px-6 rounded-full text-white font-bold text-xs sm:text-sm shadow-md shadow-[#4A3AFF]/25 transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                isLoading || successUser
+              className={`w-full py-3 px-6 rounded-full text-white font-bold text-xs sm:text-sm shadow-md shadow-[#4A3AFF]/25 transition-all flex items-center justify-center gap-2 cursor-pointer ${isLoading || successUser
                   ? "bg-[#6B5CEB] cursor-wait"
                   : "bg-[#4A3AFF] hover:bg-[#3D2EE0] active:scale-[0.98]"
-              }`}
+                }`}
             >
               {isLoading ? (
                 <>

@@ -119,7 +119,7 @@ export default function CanteenLoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col justify-between items-center bg-[#F8F7FD] select-none font-sans p-4 sm:p-6 relative overflow-x-hidden">
+    <div className="min-h-screen w-full flex flex-col justify-between items-center bg-[#F8F7FD] font-sans p-4 sm:p-6 relative overflow-x-hidden">
       {/* Background Glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-[#FFB547]/8 rounded-full blur-3xl pointer-events-none" />
 
@@ -181,11 +181,10 @@ export default function CanteenLoginPage() {
           {/* Warning / Pending / Suspended Banner */}
           {warningMessage && (
             <div
-              className={`p-3.5 rounded-[16px] border flex items-start gap-3 animate-fadeIn text-xs ${
-                warningMessage.type === "pending"
+              className={`p-3.5 rounded-[16px] border flex items-start gap-3 animate-fadeIn text-xs ${warningMessage.type === "pending"
                   ? "bg-[#FFF8E6] border-[#FFD280] text-[#8C5200]"
                   : "bg-red-50 border-red-200 text-red-700"
-              }`}
+                }`}
             >
               {warningMessage.type === "pending" ? (
                 <Clock className="w-5 h-5 text-[#FF9800] shrink-0 mt-0.5" />
@@ -273,11 +272,10 @@ export default function CanteenLoginPage() {
             <button
               type="submit"
               disabled={isLoading || !!successTenant}
-              className={`w-full py-3.5 px-6 rounded-full text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                isLoading || successTenant
+              className={`w-full py-3.5 px-6 rounded-full text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer ${isLoading || successTenant
                   ? "bg-[#1C1B3A]/80 cursor-wait"
                   : "bg-[#1C1B3A] hover:bg-[#2D2B56] active:scale-[0.98]"
-              }`}
+                }`}
             >
               {isLoading ? (
                 <>
@@ -309,28 +307,26 @@ export default function CanteenLoginPage() {
                   key={t.id}
                   type="button"
                   onClick={() => handleSelectQuickAccount(t)}
-                  className={`p-2 rounded-[12px] border text-left transition-all text-[11px] cursor-pointer ${
-                    identifier === t.username
+                  className={`p-2 rounded-[12px] border text-left transition-all text-[11px] cursor-pointer ${identifier === t.username
                       ? "bg-[#F5F3FF] border-[#4A3AFF] text-[#4A3AFF] font-bold"
                       : "bg-[#FAFAFC] border-[#E6E3F7] hover:bg-white text-[#1C1B3A]"
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="truncate block font-semibold">{t.ownerName}</span>
                     <span
-                      className={`text-[8.5px] px-1 py-0.2 rounded-full font-bold ${
-                        t.status === "ACTIVE"
+                      className={`text-[8.5px] px-1 py-0.2 rounded-full font-bold ${t.status === "ACTIVE"
                           ? "bg-[#E6F9F0] text-[#2DBA7D]"
                           : t.status === "PENDING_APPROVAL"
-                          ? "bg-[#FFF4E5] text-[#D97706]"
-                          : "bg-red-50 text-red-600"
-                      }`}
+                            ? "bg-[#FFF4E5] text-[#D97706]"
+                            : "bg-red-50 text-red-600"
+                        }`}
                     >
                       {t.status === "ACTIVE"
                         ? "Aktif"
                         : t.status === "PENDING_APPROVAL"
-                        ? "Pending"
-                        : "Beku"}
+                          ? "Pending"
+                          : "Beku"}
                     </span>
                   </div>
                   <p className="text-[9.5px] text-[#6F6B88] truncate">{t.name}</p>

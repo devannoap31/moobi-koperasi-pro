@@ -78,7 +78,7 @@ export const DashboardView: React.FC = () => {
             Selamat Datang di Portal Kopkar BIT
           </h1>
           <p className="text-white/90 text-sm leading-relaxed mb-6">
-            Melayani <strong>Karyawan PT Bhakti Idola Tama</strong> (Warehouse, Service Center, Logistik, & Office) dengan Simpan Pinjam otomatis, Toko Perkakas & Kantin harga khusus karyawan, serta integrasi Payroll terpusat.
+            Melayani <strong>Karyawan PT Bhakti Idola Tama</strong> (Warehouse, Service Center, Logistik, & Office) dengan Simpan Pinjam otomatis, Stand Kantin harga khusus karyawan, serta integrasi Payroll terpusat.
           </p>
           <div className="flex flex-wrap items-center gap-3">
             <Link
@@ -91,7 +91,7 @@ export const DashboardView: React.FC = () => {
               href="/canteen"
               className="px-5 py-2.5 rounded-full bg-white/20 hover:bg-white/30 border border-white/30 text-white text-xs font-bold transition-all cursor-pointer inline-block"
             >
-              Buka POS Kantin & Toko Perkakas
+              Buka POS Stand Kantin
             </Link>
             <Link
               href="/payroll"
@@ -191,11 +191,11 @@ export const DashboardView: React.FC = () => {
           </p>
         </div>
 
-        {/* Card 3: Omset Kantin & Toko */}
+        {/* Card 3: Omset Stand Kantin */}
         <div className="p-6 rounded-[18px] bg-white border border-[#E6E3F7] shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-bold text-[#6F6B88] uppercase tracking-wider">
-              Omzet Toko Perkakas & Kantin
+              Omzet Stand Kantin Karyawan
             </span>
             <div className="w-9 h-9 rounded-full bg-[#E6F9F0] text-[#2DBA7D] flex items-center justify-center">
               <UtensilsCrossed className="w-4 h-4" />
@@ -268,7 +268,7 @@ export const DashboardView: React.FC = () => {
                 <span className="font-semibold">- Rp {exampleCicilan.toLocaleString("id-ID")}</span>
               </div>
               <div className="flex justify-between items-center py-1 text-[#D97706]">
-                <span>3. Tagihan Toko Perkakas & Kantin</span>
+                <span>3. Tagihan Kantin Karyawan</span>
                 <span className="font-semibold">- Rp {exampleKantin.toLocaleString("id-ID")}</span>
               </div>
 
@@ -390,7 +390,7 @@ export const DashboardView: React.FC = () => {
           <div>
             <div className="flex items-center gap-2">
               <h3 className="font-bold text-sm text-[#1C1B3A]">
-                Toko Perkakas & Kantin Karyawan PT Bhakti Idola Tama
+                Stand Kantin Karyawan PT Bhakti Idola Tama
               </h3>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#E6F9F0] text-[#2DBA7D]">
                 Dual Pricing: Diskon Karyawan BIT

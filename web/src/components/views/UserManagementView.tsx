@@ -397,7 +397,7 @@ export const UserManagementView: React.FC = () => {
         return (
           <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full bg-[#FFF4E5] text-[#D97706] border border-[#FDE68A]">
             <UtensilsCrossed className="w-3 h-3" />
-            Kasir Kantin & Toko
+            Kasir Stand Kantin
           </span>
         );
       case "FINANCE_AUDIT":
@@ -556,7 +556,7 @@ export const UserManagementView: React.FC = () => {
             <option value="SUPER_ADMIN">Superadmin</option>
             <option value="ADMIN_KOPERASI">Admin Koperasi</option>
             <option value="HR_PAYROLL">HR & Payroll</option>
-            <option value="PENGELOLA_KANTIN">Pengelola Kantin & Toko</option>
+            <option value="PENGELOLA_KANTIN">Pengelola Stand Kantin</option>
             <option value="FINANCE_AUDIT">Finance & Audit</option>
           </select>
 
@@ -891,7 +891,7 @@ export const UserManagementView: React.FC = () => {
                   >
                     <option value="ADMIN_KOPERASI">Admin Koperasi</option>
                     <option value="HR_PAYROLL">HR & Payroll Verifikator</option>
-                    <option value="PENGELOLA_KANTIN">Pengelola Kantin & Toko</option>
+                    <option value="PENGELOLA_KANTIN">Pengelola Stand Kantin</option>
                     <option value="FINANCE_AUDIT">Finance & Internal Audit</option>
                     <option value="SUPER_ADMIN">Superadmin</option>
                   </select>
@@ -1230,7 +1230,7 @@ export const UserManagementView: React.FC = () => {
                   >
                     <option value="ADMIN_KOPERASI">Admin Koperasi</option>
                     <option value="HR_PAYROLL">HR & Payroll</option>
-                    <option value="PENGELOLA_KANTIN">Pengelola Kantin & Toko</option>
+                    <option value="PENGELOLA_KANTIN">Pengelola Stand Kantin</option>
                     <option value="FINANCE_AUDIT">Finance & Audit</option>
                     <option value="SUPER_ADMIN">Superadmin</option>
                   </select>

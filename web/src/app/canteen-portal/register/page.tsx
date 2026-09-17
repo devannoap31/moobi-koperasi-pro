@@ -95,7 +95,7 @@ export default function CanteenRegisterPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col justify-between items-center bg-[#F8F7FD] select-none font-sans p-4 sm:p-6 relative overflow-x-hidden">
+    <div className="min-h-screen w-full flex flex-col justify-between items-center bg-[#F8F7FD] font-sans p-4 sm:p-6 relative overflow-x-hidden">
       {/* Background Glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[750px] h-[350px] bg-[#4A3AFF]/6 rounded-full blur-3xl pointer-events-none" />
 

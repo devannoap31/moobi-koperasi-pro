@@ -56,7 +56,7 @@ export const PayrollView: React.FC = () => {
             </span>
           </div>
           <p className="text-xs text-[#6F6B88]">
-            Menggabungkan <strong>Simpanan Wajib Kopkar BIT + Cicilan Pinjaman + Tagihan Toko Perkakas & Kantin</strong> langsung dari slip gaji karyawan.
+            Menggabungkan <strong>Simpanan Wajib Kopkar BIT + Cicilan Pinjaman + Tagihan Kantin Karyawan</strong> langsung dari slip gaji karyawan.
           </p>
         </div>
 
@@ -151,7 +151,7 @@ export const PayrollView: React.FC = () => {
                 <th className="py-3.5 px-4">Gaji Pokok (Bruto)</th>
                 <th className="py-3.5 px-4 text-[#4A3AFF]">1. Simpanan Wajib</th>
                 <th className="py-3.5 px-4 text-[#D97706]">2. Cicilan Pinjaman</th>
-                <th className="py-3.5 px-4 text-[#D97706]">3. Tagihan Toko/Kantin</th>
+                <th className="py-3.5 px-4 text-[#D97706]">3. Tagihan Kantin</th>
                 <th className="py-3.5 px-4 text-[#E5484D]">Total Potongan</th>
                 <th className="py-3.5 px-4 text-[#2DBA7D]">Gaji Bersih (Take Home)</th>
               </tr>

@@ -22,7 +22,7 @@ import {
 
 export default function RootLandingPage() {
   return (
-    <div className="min-h-screen bg-[#F8F7FD] flex flex-col justify-between select-none font-sans relative overflow-x-hidden">
+    <div className="min-h-screen bg-[#F8F7FD] flex flex-col justify-between font-sans relative overflow-x-hidden">
       {/* Background Decorative Ambient Glows */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[400px] bg-gradient-to-b from-[#4A3AFF]/8 to-transparent rounded-full blur-3xl pointer-events-none -z-10" />
       <div className="absolute bottom-10 left-10 w-72 h-72 bg-[#FFB547]/5 rounded-full blur-2xl pointer-events-none -z-10" />
@@ -169,10 +169,10 @@ export default function RootLandingPage() {
               {/* Title & Description */}
               <div className="space-y-1.5">
                 <h2 className="text-lg sm:text-xl font-bold text-[#1C1B3A] group-hover:text-[#D97706] transition-colors">
-                  Portal Mitra Kantin &amp; Toko
+                  Portal Mitra Stand Kantin
                 </h2>
                 <p className="text-xs text-[#6F6B88] leading-relaxed">
-                  Ruang kerja khusus pemilik stand kantin &amp; toko untuk melayani kasir POS, menerima pesanan online dari karyawan, mengelola menu privat, dan mencairkan pendapatan.
+                  Ruang kerja khusus pemilik stand kantin untuk melayani kasir POS, menerima pesanan online dari karyawan, mengelola menu privat, dan mencairkan pendapatan.
                 </p>
               </div>
 

@@ -76,15 +76,36 @@ export type ProductCategory = "MAKANAN" | "MINUMAN" | "ELEKTRONIK_BIT" | "ALAT_K
 
 export type TenantStatus = "PENDING_APPROVAL" | "ACTIVE" | "SUSPENDED" | "REJECTED";
 
+export interface CanteenQrisProfile {
+  id: string;
+  label: string; // e.g. "QRIS Utama BCA - Stand Mbak Sri"
+  imageUrl: string; // Base64 data URL or public file path
+  nmid: string; // e.g. "ID1020039281920"
+  bankOrProvider?: string; // e.g. "BCA", "Mandiri", "Nobu Kopkar", "BRI", "Lainnya"
+  isActive: boolean; // True if this QRIS is currently active for POS and Employee App
+  createdAt?: string;
+}
+
 export interface CanteenTenant {
   id: string;
   name: string; // e.g., "Kantin Mbak Sri - Masakan Nusantara"
   ownerName: string; // e.g., "Sri Wahyuni"
+  ownerNik?: string;
   username: string; // e.g., "kantin.sri"
+  password?: string;
   email: string;
   phone: string;
   location: string; // e.g., "Kantin Utama - Stand 01"
   category: string; // e.g., "Masakan Nusantara & Aneka Nasi"
+  description?: string;
+  isOpen?: boolean; // Status operasional buka/tutup
+  openingHours?: string; // e.g. "07:30 - 16:30 WIB"
+  whatsappContact?: string;
+  qrisImageUrl?: string; // Barcode QRIS Stand (active fallback)
+  qrisNmid?: string; // NMID QRIS (active fallback)
+  qrisProfiles?: CanteenQrisProfile[]; // Up to 3 QRIS profiles
+  activeQrisId?: string; // ID of active QRIS
+  bannerUrl?: string;
   bankName: string; // e.g., "Bank Mandiri"
   bankAccountNumber: string; // e.g., "137-00-1928371-2"
   bankAccountName: string; // e.g., "Sri Wahyuni"
@@ -96,6 +117,29 @@ export interface CanteenTenant {
   rating: number;
   avatarUrl?: string;
   notes?: string;
+}
+
+export interface TenantUpdateRequest {
+  id: string;
+  tenantId: string;
+  tenantName: string;
+  submittedAt: string;
+  requestedFields: {
+    name?: string;
+    ownerName?: string;
+    ownerNik?: string;
+    phone?: string;
+    email?: string;
+    location?: string;
+    category?: string;
+    bankName?: string;
+    bankAccountNumber?: string;
+    bankAccountName?: string;
+  };
+  reason: string;
+  status: "PENDING_APPROVAL" | "APPROVED" | "REJECTED";
+  adminNotes?: string;
+  reviewedAt?: string;
 }
 
 export interface CanteenProduct {
@@ -119,7 +163,7 @@ export type CanteenOrderStatus =
   | "SELESAI"
   | "DIBATALKAN";
 
-export type CanteenPaymentMethod = "POTONG_GAJI" | "SALDO_KOPERASI" | "QRIS_TUNAI";
+export type CanteenPaymentMethod = "POTONG_GAJI" | "SALDO_KOPERASI" | "QRIS_TUNAI" | "CASH_TUNAI";
 
 export interface CanteenOrderItem {
   productId: string;
@@ -144,8 +188,10 @@ export interface CanteenOrder {
   totalAmount: number;
   totalSaved: number; // Penghematan berkat harga anggota
   paymentMethod: CanteenPaymentMethod;
+  cashReceived?: number; // Nominal uang tunai yang diterima dari pembeli
+  cashChange?: number; // Nominal uang kembalian untuk pembeli
   status: CanteenOrderStatus;
-  orderType: "KANTIN_MAKANAN" | "TOKO_PRODUK";
+  orderType: "KANTIN_MAKANAN" | "KANTIN_PRODUK";
   pickupTime?: string; // e.g. "Jam Istirahat 12:00"
   notes?: string;
   createdAt: string;
@@ -208,4 +254,97 @@ export interface BankLiquidityStatus {
   bankCreditLineUsed: number;
   bankPartnerName: string;
 }
+
+export interface BankPartnerProfile {
+  id: string;
+  code: "MANDIRI" | "BSI" | "BCA" | "BRI";
+  bankName: string;
+  accountNumber: string;
+  accountHolder: string;
+  pksNumber: string;
+  pksSignedDate: string;
+  pksExpiryDate: string;
+  creditLineLimit: number;
+  creditLineUsed: number;
+  wholesaleInterestRate: number; // % per annum (Cost of Fund)
+  maxTenorMonths: number;
+  scheme: "KONVENSIONAL" | "SYARIAH_MURABAHAH";
+  h2hStatus: "CONNECTED" | "STANDBY" | "MAINTENANCE";
+  isPrimary: boolean;
+  contactPerson: string;
+  contactPhone: string;
+}
+
+export interface BankDrawdownTranche {
+  id: string;
+  referenceNumber: string; // e.g. TRX-MDR-20260901-081
+  bankId: string;
+  bankName: string;
+  drawdownDate: string;
+  drawdownTime: string;
+  amount: number;
+  purpose: string;
+  status: "SELESAI" | "DIPROSES" | "TERJADWAL";
+  picApproval: string;
+  disbursementChannel: "KAS_KOPERASI" | "DIRECT_PAYROLL_ACCOUNT";
+  interestRateAnnual: number;
+  tenorMonths: number;
+  monthlyRepaymentToBank: number;
+  notes?: string;
+}
+
+export interface ChannelingLoanDebtor {
+  id: string;
+  loanId: string;
+  employeeId: string;
+  employeeNik: string;
+  employeeName: string;
+  department: string;
+  position: string;
+  bankName: string;
+  approvedAmount: number;
+  disbursedDate: string;
+  outstandingBalance: number;
+  tenorMonths: number;
+  paidMonths: number;
+  monthlyInstallment: number;
+  bankWholesaleRate: number; // e.g. 5.25%
+  coopInterestRate: number;  // e.g. 7.50%
+  coopNetMarginRate: number; // e.g. 2.25%
+  autodebetPayrollStatus: "LANCAR" | "HOLD" | "TIDAK_AKTIF";
+  collectibilityScore: "LANCAR (KOL-1)" | "DALAM_PENGAWASAN (KOL-2)" | "KURANG_LANCAR (KOL-3)";
+  purpose: string;
+}
+
+export interface BankRepaymentSchedule {
+  id: string;
+  period: string; // e.g. "September 2026"
+  bankId: string;
+  bankName: string;
+  dueDate: string; // e.g. "2026-09-28"
+  principalAmount: number;
+  interestAmount: number;
+  totalDue: number;
+  collectedFromPayroll: number;
+  disbursedToBank: number;
+  status: "LUNAS" | "SIAP_DISETOR" | "MENUNGGU_PAYROLL";
+  paymentDate?: string;
+  reconciliationMatch: boolean;
+  notes?: string;
+}
+
+export interface H2HGatewayStatus {
+  id: string;
+  serviceName: string;
+  provider: string;
+  endpointUrl: string;
+  status: "ONLINE" | "DEGRADED" | "OFFLINE";
+  latencyMs: number;
+  lastPingTime: string;
+  biFastReady: boolean;
+  directDebitActive: boolean;
+  dailyTransactionQuota: number;
+  dailyTransactionUsed: number;
+}
+
 

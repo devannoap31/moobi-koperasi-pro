@@ -10,7 +10,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "Kopkar BIT - PT. Bhakti Idola Tama (Moobi Koperasi Pro)",
-  description: "Platform digital Koperasi Karyawan PT. Bhakti Idola Tama: Simpan Pinjam, Kantin & Toko Perkakas, serta Integrasi Payroll Potong Gaji.",
+  description: "Platform digital Koperasi Karyawan PT. Bhakti Idola Tama: Simpan Pinjam, Kantin Karyawan, serta Integrasi Payroll Potong Gaji.",
   icons: {
     icon: "/icons/favicon.png",
     shortcut: "/icons/favicon.png",
@@ -24,11 +24,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" className={`${inter.variable} h-full antialiased`}>
+    <html lang="id" className={`${inter.variable} h-full antialiased`} suppressHydrationWarning>
       <head>
         <link rel="icon" href="/icons/favicon.png" type="image/png" />
       </head>
-      <body className="min-h-full flex flex-col bg-[#F8F7FD] text-[#212529] font-sans">
+      <body
+        className="min-h-full flex flex-col bg-[#F8F7FD] text-[#212529] font-sans"
+        suppressHydrationWarning
+      >
         {children}
       </body>
     </html>

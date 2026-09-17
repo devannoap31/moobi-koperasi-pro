@@ -72,6 +72,7 @@ export const CanteenView: React.FC = () => {
   const [paymentMethod, setPaymentMethod] = useState<CanteenPaymentMethod>("POTONG_GAJI");
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [lastCompletedOrder, setLastCompletedOrder] = useState<CanteenOrder | null>(null);
+  const [receiptPaperSize, setReceiptPaperSize] = useState<"58mm" | "80mm">("58mm");
 
   // CRUD Product Modals
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
@@ -436,7 +437,7 @@ export const CanteenView: React.FC = () => {
           <div className="space-y-1">
             <div className="flex items-center gap-2.5 flex-wrap">
               <h1 className="text-xl sm:text-2xl font-bold text-[#1C1B3A] tracking-tight">
-                Kantin &amp; Toko Perkakas Kopkar BIT
+                Kantin Karyawan Kopkar BIT
               </h1>
               <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#F5F3FF] text-[#4A3AFF] border border-[#E6E3F7] flex items-center gap-1">
                 <Sparkles className="w-3.5 h-3.5" />
@@ -1216,7 +1217,7 @@ export const CanteenView: React.FC = () => {
                             <div className="min-w-0">
                               <p className="font-bold text-[#1C1B3A] text-xs">{prod.name}</p>
                               <p className="text-[10.5px] text-[#6F6B88] truncate max-w-xs">
-                                {prod.description || "Tersedia di kantin & toko BIT"}
+                                {prod.description || "Tersedia di kantin karyawan BIT"}
                               </p>
                             </div>
                           </div>
@@ -1303,76 +1304,207 @@ export const CanteenView: React.FC = () => {
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL 1: STRUK INVOICE TRANSAKSI POS */}
+      {/* MODAL 1: STRUK INVOICE TRANSAKSI POS (THERMAL SUPPORT)                     */}
       {/* ========================================================================= */}
       {showReceiptModal && lastCompletedOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-white rounded-[22px] border border-[#E6E3F7] shadow-2xl w-full max-w-sm p-6 space-y-4">
-            <div className="text-center space-y-1 pb-2 border-b border-dashed border-[#E6E3F7]">
-              <div className="w-10 h-10 rounded-full bg-[#E6F9F0] text-[#2DBA7D] flex items-center justify-center mx-auto mb-1">
-                <CheckCircle2 className="w-6 h-6" />
-              </div>
-              <h3 className="font-extrabold text-sm text-[#1C1B3A]">KOPKAR PT BHAKTI IDOLA TAMA</h3>
-              <p className="text-[10.5px] text-[#6F6B88]">Struk Resmi Kantin &amp; Toko Koperasi</p>
-              <p className="text-[11px] font-mono text-[#4A3AFF] font-bold">{lastCompletedOrder.orderNumber}</p>
-            </div>
-
-            <div className="space-y-1.5 text-xs text-[#6F6B88]">
-              <div className="flex justify-between">
-                <span>Pembeli:</span>
-                <span className="font-bold text-[#1C1B3A]">{lastCompletedOrder.employeeName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>NIK / Divisi:</span>
-                <span>{lastCompletedOrder.employeeNik}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Metode:</span>
-                <span className="font-semibold text-[#4A3AFF]">
-                  {lastCompletedOrder.paymentMethod === "POTONG_GAJI" ? "Potong Gaji (Payroll)" : "Saldo Koperasi"}
-                </span>
-              </div>
-            </div>
-
-            {/* Itemized List */}
-            <div className="space-y-1.5 pt-2 border-t border-dashed border-[#E6E3F7] text-xs divide-y divide-gray-100">
-              {lastCompletedOrder.items.map((item, i) => (
-                <div key={i} className="pt-1.5 flex justify-between">
-                  <div>
-                    <p className="font-bold text-[#1C1B3A]">{item.productName}</p>
-                    <p className="text-[10px] text-[#6F6B88]">
-                      {item.quantity} x Rp {item.price.toLocaleString("id-ID")}
-                    </p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-fadeIn overflow-y-auto">
+          <div className="bg-white rounded-[24px] border border-[#E6E3F7] shadow-2xl w-full max-w-md p-5 sm:p-6 space-y-4 max-h-[96vh] flex flex-col my-auto">
+            {/* Modal Header & Paper Size Switcher (Hidden when printing) */}
+            <div className="no-print space-y-3 pb-3 border-b border-[#E6E3F7] shrink-0">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-[#E6F9F0] text-[#2DBA7D] flex items-center justify-center font-bold">
+                    <Printer className="w-4 h-4" />
                   </div>
-                  <span className="font-bold text-[#1C1B3A]">
-                    Rp {item.subtotal.toLocaleString("id-ID")}
-                  </span>
+                  <div>
+                    <h3 className="text-sm font-bold text-[#1C1B3A]">Struk Transaksi POS</h3>
+                    <p className="text-[10.5px] text-[#6F6B88]">Format Cetak Thermal Kasir</p>
+                  </div>
                 </div>
-              ))}
-            </div>
+                <button
+                  type="button"
+                  onClick={() => setShowReceiptModal(false)}
+                  className="w-7 h-7 rounded-full hover:bg-gray-100 text-[#6F6B88] flex items-center justify-center cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
 
-            <div className="pt-2 border-t border-dashed border-[#E6E3F7] space-y-1 text-xs">
-              {lastCompletedOrder.totalSaved > 0 && (
-                <div className="flex justify-between text-[#2DBA7D] font-bold">
-                  <span>Hemat Diskon Anggota:</span>
-                  <span>- Rp {lastCompletedOrder.totalSaved.toLocaleString("id-ID")}</span>
-                </div>
-              )}
-              <div className="flex justify-between text-sm font-extrabold text-[#1C1B3A]">
-                <span>Total:</span>
-                <span className="text-[#4A3AFF]">
-                  Rp {lastCompletedOrder.totalAmount.toLocaleString("id-ID")}
+              {/* Thermal Paper Size Selector */}
+              <div className="flex items-center justify-between bg-[#FAFAFC] p-1.5 rounded-[12px] border border-[#E6E3F7]">
+                <span className="text-[11px] font-bold text-[#6F6B88] pl-1.5">
+                  Ukuran Kertas Thermal:
                 </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setReceiptPaperSize("58mm")}
+                    className={`px-3 py-1 rounded-[8px] text-[11px] font-bold transition-all cursor-pointer ${
+                      receiptPaperSize === "58mm"
+                        ? "bg-[#4A3AFF] text-white shadow-xs"
+                        : "text-[#6F6B88] hover:text-[#1C1B3A] hover:bg-white"
+                    }`}
+                  >
+                    58mm (Mini POS)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReceiptPaperSize("80mm")}
+                    className={`px-3 py-1 rounded-[8px] text-[11px] font-bold transition-all cursor-pointer ${
+                      receiptPaperSize === "80mm"
+                        ? "bg-[#4A3AFF] text-white shadow-xs"
+                        : "text-[#6F6B88] hover:text-[#1C1B3A] hover:bg-white"
+                    }`}
+                  >
+                    80mm (Standar)
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div className="pt-3 flex gap-2">
+            {/* Scrollable Receipt Preview Container */}
+            <div className="flex-1 overflow-y-auto py-1 flex justify-center bg-[#F8F7FD] rounded-[16px] p-3 border border-[#E6E3F7]">
+              {/* Authentic Thermal Printable Receipt Card */}
+              <div
+                id="pos-receipt-print-area"
+                className="thermal-receipt-paper bg-white text-black p-4 space-y-2 border border-dashed border-gray-300 shadow-sm text-left select-text"
+                style={{
+                  width: receiptPaperSize === "58mm" ? "58mm" : "80mm",
+                  maxWidth: "100%",
+                  fontSize: receiptPaperSize === "58mm" ? "10px" : "11.5px",
+                  lineHeight: "1.28",
+                  fontFamily: "'Courier Prime', 'Courier New', Courier, monospace",
+                }}
+              >
+                {/* 1. Thermal Header */}
+                <div className="text-center space-y-0.5 pb-1.5">
+                  <p className="font-bold text-[10.5px] uppercase tracking-wider">
+                    *** KOPERASI KARYAWAN PT BIT ***
+                  </p>
+                  <h4 className="font-black text-xs sm:text-sm uppercase leading-tight pt-0.5">
+                    KANTIN UTAMA KARYAWAN
+                  </h4>
+                  <p className="text-[9.5px] text-gray-700">Lantai 1 - Gedung Kantor Pusat BIT</p>
+                  <div className="border-b border-dashed border-black pt-1.5" />
+                </div>
+
+                {/* 2. Transaction Metadata */}
+                <div className="space-y-0.5 text-[10px]">
+                  <div className="flex justify-between">
+                    <span>No. Struk :</span>
+                    <span className="font-bold">{lastCompletedOrder.orderNumber}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Waktu     :</span>
+                    <span>{lastCompletedOrder.createdAt === "Baru saja" ? new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) + " WIB" : lastCompletedOrder.createdAt}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Kasir     :</span>
+                    <span>Kasir Utama Kantin</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Pelanggan :</span>
+                    <span className="font-bold truncate max-w-[130px]">{lastCompletedOrder.employeeName}</span>
+                  </div>
+                  {lastCompletedOrder.employeeNik && lastCompletedOrder.employeeNik !== "-" && (
+                    <div className="flex justify-between">
+                      <span>NIK       :</span>
+                      <span className="truncate max-w-[130px]">{lastCompletedOrder.employeeNik}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span>Metode    :</span>
+                    <span className="font-bold">
+                      {lastCompletedOrder.paymentMethod === "POTONG_GAJI"
+                        ? "POTONG GAJI (PAYROLL)"
+                        : "SALDO KOPERASI"}
+                    </span>
+                  </div>
+                  <div className="border-b border-dashed border-black pt-1" />
+                </div>
+
+                {/* 3. Items Breakdown */}
+                <div className="space-y-1 py-0.5">
+                  <div className="flex justify-between font-bold text-[9.5px] border-b border-dotted border-gray-400 pb-0.5">
+                    <span>MENU / ITEM</span>
+                    <span>SUBTOTAL</span>
+                  </div>
+
+                  {lastCompletedOrder.items.map((item, idx) => (
+                    <div key={idx} className="space-y-0.2">
+                      <div className="flex justify-between items-start font-bold">
+                        <span className="break-words pr-1">
+                          {item.quantity}x {item.productName}
+                        </span>
+                        <span className="shrink-0 text-right">
+                          Rp {item.subtotal.toLocaleString("id-ID")}
+                        </span>
+                      </div>
+                      <div className="text-[9px] text-gray-600 pl-2.5">
+                        @Rp {(item.subtotal / item.quantity).toLocaleString("id-ID")}
+                      </div>
+                    </div>
+                  ))}
+                  <div className="border-b border-dashed border-black pt-1" />
+                </div>
+
+                {/* 4. Payment Totals */}
+                <div className="space-y-0.5 text-[10.5px]">
+                  {lastCompletedOrder.totalSaved && lastCompletedOrder.totalSaved > 0 ? (
+                    <div className="flex justify-between text-[9.5px]">
+                      <span>Hemat Diskon Member:</span>
+                      <span>-Rp {lastCompletedOrder.totalSaved.toLocaleString("id-ID")}</span>
+                    </div>
+                  ) : null}
+
+                  <div className="flex justify-between font-black text-xs sm:text-sm border-y border-double border-black py-1 my-0.5">
+                    <span>TOTAL TAGIHAN:</span>
+                    <span>Rp {lastCompletedOrder.totalAmount.toLocaleString("id-ID")}</span>
+                  </div>
+
+                  {lastCompletedOrder.paymentMethod === "POTONG_GAJI" && (
+                    <div className="flex justify-between text-[9.5px]">
+                      <span>Payroll Cutoff:</span>
+                      <span>Tgl 25 Setiap Bulan</span>
+                    </div>
+                  )}
+                  <div className="border-b border-dashed border-black pt-1" />
+                </div>
+
+                {/* 5. Thermal Receipt Footer */}
+                <div className="text-center pt-1 space-y-0.5 text-[9.5px]">
+                  <p className="font-bold text-[10px]">*** LUNAS ***</p>
+                  <p className="font-semibold">TERIMA KASIH ATAS KUNJUNGAN ANDA</p>
+                  <p className="text-[8.5px] text-gray-700">
+                    Selamat Menikmati Hidangan Kantin
+                  </p>
+                  <div className="py-0.5 tracking-widest text-[8.5px] select-none font-mono text-center">
+                    ||| | ||||| | ||| |||| | ||||| |||
+                  </div>
+                  <p className="text-[8px] text-gray-500">
+                    Kopkar PT BIT POS System • {new Date().toLocaleDateString("id-ID")}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons (Hidden when printing) */}
+            <div className="no-print space-y-2 pt-2 border-t border-[#E6E3F7] shrink-0">
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="w-full py-3 px-4 rounded-full bg-[#1C1B3A] hover:bg-[#25244C] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer active:scale-[0.98]"
+              >
+                <Printer className="w-4 h-4 text-[#2DBA7D]" />
+                <span>🖨️ Cetak Struk Thermal ({receiptPaperSize})</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => setShowReceiptModal(false)}
-                className="flex-1 py-2.5 rounded-full bg-[#4A3AFF] hover:bg-[#3D2EE0] text-white font-bold text-xs cursor-pointer shadow-xs"
+                className="w-full py-2.5 rounded-full bg-white hover:bg-gray-50 border border-[#E6E3F7] text-[#1C1B3A] font-bold text-xs transition-all cursor-pointer"
               >
-                Selesai &amp; Tutup
+                Tutup Struk &amp; Siap Transaksi Baru
               </button>
             </div>
           </div>
@@ -1392,7 +1524,7 @@ export const CanteenView: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-base text-[#1C1B3A]">Tambah Menu / Produk Baru</h3>
-                  <p className="text-xs text-[#6F6B88]">Kantin &amp; Toko Koperasi PT Bhakti Idola Tama</p>
+                  <p className="text-xs text-[#6F6B88]">Kantin Karyawan Koperasi PT Bhakti Idola Tama</p>
                 </div>
               </div>
               <button

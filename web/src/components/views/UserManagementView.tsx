@@ -25,6 +25,7 @@ import {
   Loader2,
   Info,
   X,
+  ShoppingBag,
 } from "lucide-react";
 import { initialUserAccounts, SYSTEM_MODULE_LIST, SystemModuleConfig } from "@/data/mockData";
 import { UserAccount, UserRole, SystemModuleKey, ModuleAccessLevel } from "@/types";
@@ -60,6 +61,7 @@ export const UserManagementView: React.FC = () => {
       employees: "READ" as ModuleAccessLevel,
       savings_loans: "NONE" as ModuleAccessLevel,
       canteen: "NONE" as ModuleAccessLevel,
+      store: "NONE" as ModuleAccessLevel,
       payroll: "NONE" as ModuleAccessLevel,
       bank_channeling: "NONE" as ModuleAccessLevel,
       user_management: "NONE" as ModuleAccessLevel,
@@ -72,6 +74,7 @@ export const UserManagementView: React.FC = () => {
     employees: "NONE",
     savings_loans: "NONE",
     canteen: "NONE",
+    store: "NONE",
     payroll: "NONE",
     bank_channeling: "NONE",
     user_management: "NONE",
@@ -112,6 +115,7 @@ export const UserManagementView: React.FC = () => {
           employees: "FULL",
           savings_loans: "FULL",
           canteen: "FULL",
+          store: "FULL",
           payroll: "FULL",
           bank_channeling: "FULL",
           user_management: "FULL",
@@ -122,6 +126,7 @@ export const UserManagementView: React.FC = () => {
           employees: "FULL",
           savings_loans: "FULL",
           canteen: "FULL",
+          store: "FULL",
           payroll: "FULL",
           bank_channeling: "FULL",
           user_management: "NONE",
@@ -132,6 +137,7 @@ export const UserManagementView: React.FC = () => {
           employees: "FULL",
           savings_loans: "READ",
           canteen: "NONE",
+          store: "READ",
           payroll: "FULL",
           bank_channeling: "NONE",
           user_management: "NONE",
@@ -142,6 +148,7 @@ export const UserManagementView: React.FC = () => {
           employees: "READ",
           savings_loans: "NONE",
           canteen: "FULL",
+          store: "NONE",
           payroll: "NONE",
           bank_channeling: "NONE",
           user_management: "NONE",
@@ -152,6 +159,7 @@ export const UserManagementView: React.FC = () => {
           employees: "READ",
           savings_loans: "READ",
           canteen: "READ",
+          store: "READ",
           payroll: "READ",
           bank_channeling: "READ",
           user_management: "NONE",
@@ -162,6 +170,7 @@ export const UserManagementView: React.FC = () => {
           employees: "READ",
           savings_loans: "NONE",
           canteen: "NONE",
+          store: "NONE",
           payroll: "NONE",
           bank_channeling: "NONE",
           user_management: "NONE",
@@ -358,6 +367,8 @@ export const UserManagementView: React.FC = () => {
         return Wallet;
       case "canteen":
         return UtensilsCrossed;
+      case "store":
+        return ShoppingBag;
       case "payroll":
         return ReceiptText;
       case "bank_channeling":
@@ -507,7 +518,7 @@ export const UserManagementView: React.FC = () => {
               <SlidersHorizontal className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-xl sm:text-2xl font-bold text-[#1C1B3A]">7 Modul</p>
+          <p className="text-xl sm:text-2xl font-bold text-[#1C1B3A]">{SYSTEM_MODULE_LIST.length} Modul</p>
           <p className="text-[11px] text-[#6F6B88] font-medium mt-1">Perizinan granular aktif</p>
         </div>
       </div>

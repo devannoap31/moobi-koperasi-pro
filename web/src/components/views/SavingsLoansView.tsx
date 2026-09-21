@@ -19,6 +19,9 @@ import {
   Loader2,
   Check,
   X,
+  FileSpreadsheet,
+  Printer,
+  FileText,
 } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
 import {
@@ -27,6 +30,12 @@ import {
   calculateDynamicLoanLimit,
 } from "@/data/mockData";
 import { LoanApplication, LoanStatus } from "@/types";
+import {
+  exportToCsv,
+  buildSavingsLoansReportConfig,
+  ReportConfig,
+} from "@/utils/reportExporter";
+import { ReportExportModal } from "@/components/common/ReportExportModal";
 
 export const SavingsLoansView: React.FC = () => {
   const [activeSubTab, setActiveSubTab] = useState<"loans" | "savings">("loans");
@@ -51,6 +60,21 @@ export const SavingsLoansView: React.FC = () => {
   const [savingsAmount, setSavingsAmount] = useState<number>(5000000);
   const [savingsLockPeriod, setSavingsLockPeriod] = useState<"6_BULAN" | "1_TAHUN">("1_TAHUN");
   const [showSavingsSuccess, setShowSavingsSuccess] = useState(false);
+
+  // Report Export State
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [currentExportConfig, setCurrentExportConfig] = useState<ReportConfig | null>(null);
+
+  const handleOpenExportModal = () => {
+    const config = buildSavingsLoansReportConfig(loans, sampleEmployees);
+    setCurrentExportConfig(config);
+    setIsExportModalOpen(true);
+  };
+
+  const handleDirectCsvExport = () => {
+    const config = buildSavingsLoansReportConfig(loans, sampleEmployees);
+    exportToCsv(config);
+  };
 
   const selectedEmployee =
     sampleEmployees.find((e) => e.id === selectedEmpId) || sampleEmployees[0];
@@ -432,7 +456,7 @@ export const SavingsLoansView: React.FC = () => {
 
           {/* Loan List Table */}
           <div className="bg-white rounded-[18px] border border-[#E6E3F7] shadow-sm overflow-hidden">
-            <div className="p-5 border-b border-[#E6E3F7] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="p-5 border-b border-[#E6E3F7] flex flex-col md:flex-row md:items-center justify-between gap-3">
               <div>
                 <h3 className="font-bold text-sm text-[#1C1B3A]">
                   Daftar Pengajuan & Status Persetujuan Pinjaman Karyawan
@@ -441,9 +465,27 @@ export const SavingsLoansView: React.FC = () => {
                   Alur: Pengajuan Karyawan ➡️ Verifikasi HRD ➡️ Approval Koperasi ➡️ Pencairan
                 </p>
               </div>
-              <span className="text-xs text-[#6F6B88]">
-                Total: <strong>{loans.length} Pengajuan</strong>
-              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs text-[#6F6B88] mr-2">
+                  Total: <strong>{loans.length} Pengajuan</strong>
+                </span>
+                <button
+                  type="button"
+                  onClick={handleDirectCsvExport}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#2DBA7D]/30 bg-[#E6F9F0] text-[#2DBA7D] hover:bg-[#2DBA7D] hover:text-white text-xs font-bold transition-colors cursor-pointer"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5" />
+                  <span>Export Excel</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleOpenExportModal}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#4A3AFF] hover:bg-[#6B5CEB] text-white text-xs font-bold transition-colors shadow-sm cursor-pointer"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Cetak PDF Laporan</span>
+                </button>
+              </div>
             </div>
 
             <div className="overflow-x-auto">
@@ -724,6 +766,15 @@ export const SavingsLoansView: React.FC = () => {
             )}
           </div>
         </div>
+      )}
+
+      {/* Formal Cooperative Report Export Modal */}
+      {isExportModalOpen && currentExportConfig && (
+        <ReportExportModal
+          isOpen={isExportModalOpen}
+          onClose={() => setIsExportModalOpen(false)}
+          config={currentExportConfig}
+        />
       )}
     </div>
   );

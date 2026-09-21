@@ -10,82 +10,54 @@ import {
   CheckCircle2,
   AlertTriangle,
   Clock,
-  Ban,
-  Trash2,
-  Check,
-  X,
   Search,
   Filter,
-  DollarSign,
   TrendingUp,
   Receipt,
-  CreditCard,
   Building2,
   Calendar,
   AlertCircle,
   FileText,
   ExternalLink,
-  Plus,
-  Edit3,
-  Phone,
-  Mail,
   MapPin,
   Sparkles,
   Send,
-  ArrowRight,
-  ChevronRight,
+  Phone,
+  Mail,
+  UserCheck,
+  CreditCard,
+  QrCode,
+  Banknote,
   ShieldCheck,
-  RefreshCw,
+  FileSpreadsheet,
+  Printer,
 } from "lucide-react";
 import {
-  sampleCanteenTenants,
   sampleEmployeeCanteenActivities,
-  sampleCanteenSettlements,
   sampleProducts,
-  sampleTenantUpdateRequests,
 } from "@/data/mockData";
-import {
-  CanteenTenant,
-  TenantStatus,
-  EmployeeCanteenActivity,
-  CanteenSettlement,
-  TenantUpdateRequest,
-} from "@/types";
+import { EmployeeCanteenActivity } from "@/types";
 import { useDebounce } from "@/hooks/useDebounce";
+import {
+  FormalReportConfig,
+  buildCanteenSuperadminReportConfig,
+  exportToCsv,
+} from "@/utils/reportExporter";
+import { ReportExportModal } from "@/components/common/ReportExportModal";
 
 export const SuperadminCanteenManagementView: React.FC = () => {
-  // Active Tab: "TENANTS" | "ACTIVITIES" | "SETTLEMENT" | "UPDATES" | "SETTINGS"
-  const [activeTab, setActiveTab] = useState<"TENANTS" | "ACTIVITIES" | "SETTLEMENT" | "UPDATES" | "SETTINGS">("TENANTS");
-
-  // Tenants State
-  const [tenants, setTenants] = useState<CanteenTenant[]>(sampleCanteenTenants);
-  const [tenantStatusFilter, setTenantStatusFilter] = useState<string>("ALL");
-  const [tenantSearchTerm, setTenantSearchTerm] = useState("");
-  const debouncedTenantSearch = useDebounce(tenantSearchTerm, 300);
-
-  // Modal States for Tenants
-  const [selectedTenantForAction, setSelectedTenantForAction] = useState<CanteenTenant | null>(null);
-  const [actionType, setActionType] = useState<"APPROVE" | "REJECT" | "SUSPEND" | "REACTIVATE" | "DELETE" | "DETAIL" | null>(null);
-  const [actionNote, setActionNote] = useState("");
-
-  // Update Requests State
-  const [updateRequests, setUpdateRequests] = useState<TenantUpdateRequest[]>(sampleTenantUpdateRequests);
-  const [updateRequestFilter, setUpdateRequestFilter] = useState<string>("ALL");
-  const [selectedUpdateRequestForAction, setSelectedUpdateRequestForAction] = useState<TenantUpdateRequest | null>(null);
-  const [updateActionType, setUpdateActionType] = useState<"APPROVE" | "REJECT" | null>(null);
-  const [updateActionNote, setUpdateActionNote] = useState("");
+  // Navigation Sub-tab: "PROFILE" | "ACTIVITIES" | "SETTINGS"
+  const [activeTab, setActiveTab] = useState<"PROFILE" | "ACTIVITIES" | "SETTINGS">("PROFILE");
 
   // Employee Activities State
   const [activities, setActivities] = useState<EmployeeCanteenActivity[]>(sampleEmployeeCanteenActivities);
   const [activitySearchTerm, setActivitySearchTerm] = useState("");
   const debouncedActivitySearch = useDebounce(activitySearchTerm, 300);
   const [activityPaymentFilter, setActivityPaymentFilter] = useState<string>("ALL");
-  const [activityTenantFilter, setActivityTenantFilter] = useState<string>("ALL");
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportConfig, setReportConfig] = useState<FormalReportConfig | null>(null);
 
-  // Settlements State
-  const [settlements, setSettlements] = useState<CanteenSettlement[]>(sampleCanteenSettlements);
-
-  // Broadcast Message State (Ide Tambahan)
+  // Broadcast Message State
   const [broadcastMessage, setBroadcastMessage] = useState("");
   const [broadcastSent, setBroadcastSent] = useState(false);
 
@@ -97,195 +69,27 @@ export const SuperadminCanteenManagementView: React.FC = () => {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  // Metrics Calculation
-  const totalTenantsCount = tenants.length;
-  const activeTenantsCount = tenants.filter((t) => t.status === "ACTIVE").length;
-  const pendingTenantsCount = tenants.filter((t) => t.status === "PENDING_APPROVAL").length;
-  const suspendedTenantsCount = tenants.filter((t) => t.status === "SUSPENDED").length;
-  const pendingUpdateRequestsCount = updateRequests.filter(
-    (r) => r.status === "PENDING_APPROVAL"
-  ).length;
-
-  const totalCanteenRevenue = tenants.reduce((acc, t) => acc + t.totalRevenue, 0);
-  const totalPendingSettlement = tenants.reduce((acc, t) => acc + t.pendingSettlement, 0);
-
-  // Filter Tenants
-  const filteredTenants = tenants.filter((t) => {
-    const matchStatus = tenantStatusFilter === "ALL" || t.status === tenantStatusFilter;
-    const matchSearch =
-      !debouncedTenantSearch.trim() ||
-      t.name.toLowerCase().includes(debouncedTenantSearch.toLowerCase()) ||
-      t.ownerName.toLowerCase().includes(debouncedTenantSearch.toLowerCase()) ||
-      t.location.toLowerCase().includes(debouncedTenantSearch.toLowerCase()) ||
-      t.category.toLowerCase().includes(debouncedTenantSearch.toLowerCase());
-    return matchStatus && matchSearch;
-  });
-
-  // Filter Update Requests
-  const filteredUpdateRequests = updateRequests.filter((req) => {
-    if (updateRequestFilter === "ALL") return true;
-    return req.status === updateRequestFilter;
-  });
+  // Metrics Calculation for Kantin Tunggal
+  const totalCanteenRevenue = 18950000;
+  const canteenProducts = sampleProducts.filter((p) => p.category === "MAKANAN" || p.category === "MINUMAN");
 
   // Filter Activities
   const filteredActivities = activities.filter((act) => {
     const matchPayment = activityPaymentFilter === "ALL" || act.paymentMethod === activityPaymentFilter;
-    const matchTenant = activityTenantFilter === "ALL" || act.tenantId === activityTenantFilter;
     const matchSearch =
       !debouncedActivitySearch.trim() ||
       act.employeeName.toLowerCase().includes(debouncedActivitySearch.toLowerCase()) ||
       act.employeeNik.toLowerCase().includes(debouncedActivitySearch.toLowerCase()) ||
-      act.tenantName.toLowerCase().includes(debouncedActivitySearch.toLowerCase()) ||
       act.itemsSummary.toLowerCase().includes(debouncedActivitySearch.toLowerCase());
-    return matchPayment && matchTenant && matchSearch;
+    return matchPayment && matchSearch;
   });
-
-  // Handle Tenant Actions
-  const handleOpenActionModal = (
-    tenant: CanteenTenant,
-    type: "APPROVE" | "REJECT" | "SUSPEND" | "REACTIVATE" | "DELETE" | "DETAIL"
-  ) => {
-    setSelectedTenantForAction(tenant);
-    setActionType(type);
-    setActionNote("");
-  };
-
-  // Handle Update Request Actions
-  const handleOpenUpdateRequestModal = (
-    req: TenantUpdateRequest,
-    type: "APPROVE" | "REJECT"
-  ) => {
-    setSelectedUpdateRequestForAction(req);
-    setUpdateActionType(type);
-    setUpdateActionNote("");
-  };
-
-  const handleExecuteUpdateRequestAction = () => {
-    if (!selectedUpdateRequestForAction || !updateActionType) return;
-    const req = selectedUpdateRequestForAction;
-
-    if (updateActionType === "APPROVE") {
-      // Apply updates to tenant
-      setTenants((prevTenants) =>
-        prevTenants.map((t) => {
-          if (t.id === req.tenantId) {
-            return {
-              ...t,
-              ...req.requestedFields,
-            };
-          }
-          return t;
-        })
-      );
-
-      // Mark update request as APPROVED
-      setUpdateRequests((prev) =>
-        prev.map((r) =>
-          r.id === req.id
-            ? {
-                ...r,
-                status: "APPROVED",
-                reviewedAt: new Date().toISOString().replace("T", " ").substring(0, 16),
-                adminNotes: updateActionNote || "Disetujui oleh Superadmin Kopkar BIT",
-              }
-            : r
-        )
-      );
-
-      showToast(`Pembaruan data stand "${req.tenantName}" berhasil disetujui & diterapkan!`);
-    } else {
-      // Mark update request as REJECTED
-      setUpdateRequests((prev) =>
-        prev.map((r) =>
-          r.id === req.id
-            ? {
-                ...r,
-                status: "REJECTED",
-                reviewedAt: new Date().toISOString().replace("T", " ").substring(0, 16),
-                adminNotes: updateActionNote || "Ditolak oleh Superadmin (data tidak sesuai)",
-              }
-            : r
-        )
-      );
-
-      showToast(`Pengajuan pembaruan data untuk stand "${req.tenantName}" telah ditolak.`, "info");
-    }
-
-    setUpdateActionType(null);
-    setSelectedUpdateRequestForAction(null);
-    setUpdateActionNote("");
-  };
-
-  const handleExecuteTenantAction = () => {
-    if (!selectedTenantForAction || !actionType) return;
-
-    if (actionType === "APPROVE") {
-      setTenants((prev) =>
-        prev.map((t) =>
-          t.id === selectedTenantForAction.id
-            ? { ...t, status: "ACTIVE", notes: actionNote || "Disetujui oleh Superadmin Kopkar BIT" }
-            : t
-        )
-      );
-      showToast(`Stand "${selectedTenantForAction.name}" berhasil disetujui & aktif!`);
-    } else if (actionType === "REJECT") {
-      setTenants((prev) =>
-        prev.map((t) =>
-          t.id === selectedTenantForAction.id
-            ? { ...t, status: "REJECTED", notes: actionNote || "Pengajuan ditolak oleh Superadmin" }
-            : t
-        )
-      );
-      showToast(`Pengajuan "${selectedTenantForAction.name}" telah ditolak.`, "info");
-    } else if (actionType === "SUSPEND") {
-      setTenants((prev) =>
-        prev.map((t) =>
-          t.id === selectedTenantForAction.id
-            ? { ...t, status: "SUSPENDED", notes: actionNote || "Dibekukan sementara oleh Superadmin" }
-            : t
-        )
-      );
-      showToast(`Akun stand "${selectedTenantForAction.name}" telah dibekukan sementara.`, "error");
-    } else if (actionType === "REACTIVATE") {
-      setTenants((prev) =>
-        prev.map((t) =>
-          t.id === selectedTenantForAction.id
-            ? { ...t, status: "ACTIVE", notes: "Diaktifkan kembali oleh Superadmin" }
-            : t
-        )
-      );
-      showToast(`Akun stand "${selectedTenantForAction.name}" telah diaktifkan kembali!`);
-    } else if (actionType === "DELETE") {
-      setTenants((prev) => prev.filter((t) => t.id !== selectedTenantForAction.id));
-      showToast(`Data stand "${selectedTenantForAction.name}" berhasil dihapus dari sistem.`, "info");
-    }
-
-    setActionType(null);
-    setSelectedTenantForAction(null);
-  };
-
-  // Handle Process Settlement Batch
-  const handleProcessSettlement = (settlementId: string) => {
-    setSettlements((prev) =>
-      prev.map((s) =>
-        s.id === settlementId
-          ? {
-              ...s,
-              status: "PROCESSED",
-              processedAt: new Date().toISOString().replace("T", " ").substring(0, 16),
-            }
-          : s
-      )
-    );
-    showToast("Settlement dana ke rekening pemilik kantin berhasil diproses!");
-  };
 
   // Handle Send Broadcast
   const handleSendBroadcast = (e: React.FormEvent) => {
     e.preventDefault();
     if (!broadcastMessage.trim()) return;
     setBroadcastSent(true);
-    showToast("Pengumuman berhasil disiarkan ke seluruh stand mitra kantin!");
+    showToast("Pengumuman berhasil disiarkan ke layar POS kasir kantin!");
     setTimeout(() => {
       setBroadcastMessage("");
       setBroadcastSent(false);
@@ -293,7 +97,14 @@ export const SuperadminCanteenManagementView: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 font-sans">
+    <div className="space-y-6 font-sans max-w-7xl mx-auto pb-16">
+      {/* Report Export Modal */}
+      <ReportExportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        config={reportConfig}
+      />
+
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 animate-fadeIn">
@@ -315,75 +126,71 @@ export const SuperadminCanteenManagementView: React.FC = () => {
       )}
 
       {/* 1. HEADER & EXECUTIVE METRICS */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-[22px] border border-[#E6E3F7] shadow-xs">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap mb-1">
             <h1 className="text-xl sm:text-2xl font-bold text-[#1C1B3A] tracking-tight">
-              Kelola Mitra Kantin &amp; Monitoring Payroll
+              Monitoring Kantin Utama PT Bhakti Idola Tama
             </h1>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#F5F3FF] text-[#4A3AFF] border border-[#E6E3F7]">
-              Multi-Tenant Kopkar
+            <span className="text-[10.5px] font-bold px-2.5 py-0.5 rounded-full bg-[#E6F9F0] text-[#2DBA7D] border border-[#2DBA7D]/30">
+              Kantin Tunggal Pabrik BIT
             </span>
           </div>
-          <p className="text-xs text-[#6F6B88] mt-0.5">
-            Pusat persetujuan akun stand kantin, pengawasan arus kas belanja karyawan, dan jadwal settlement potong gaji.
+          <p className="text-xs text-[#6F6B88]">
+            Pusat pengawasan operasional satu-satunya kantin pabrik, transaksi makan karyawan (Shift 1 &amp; 2), serta integrasi POS Kasir.
           </p>
         </div>
 
         {/* Quick Portal Switch Link */}
-        <Link
-          href="/canteen-portal/login"
-          target="_blank"
-          className="inline-flex items-center gap-2 py-2 px-4 rounded-full bg-white border border-[#E6E3F7] hover:bg-[#F5F3FF] text-[#4A3AFF] font-bold text-xs shadow-xs transition-all shrink-0"
-        >
-          <UtensilsCrossed className="w-3.5 h-3.5" />
-          <span>Buka Portal Mitra Kantin</span>
-          <ExternalLink className="w-3 h-3" />
-        </Link>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <Link
+            href="/canteen-portal/merchant/pos"
+            target="_blank"
+            className="inline-flex items-center gap-2 py-2.5 px-5 rounded-full bg-[#4A3AFF] hover:bg-[#3D2EE0] text-white font-bold text-xs shadow-md shadow-[#4A3AFF]/20 transition-all cursor-pointer"
+          >
+            <UtensilsCrossed className="w-4 h-4" />
+            <span>Buka POS Kasir Kantin</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </Link>
+        </div>
       </div>
 
       {/* 4 Summary Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: Total & Active Tenants */}
-        <div className="bg-white p-4.5 rounded-[20px] border border-[#E6E3F7] shadow-sm space-y-1">
+        {/* Card 1: Status Operasional */}
+        <div className="bg-white p-5 rounded-[20px] border border-[#E6E3F7] shadow-xs space-y-1.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#6F6B88]">Total Mitra Stand</span>
-            <div className="w-8 h-8 rounded-full bg-[#F5F3FF] text-[#4A3AFF] flex items-center justify-center">
+            <span className="text-xs font-semibold text-[#6F6B88]">Status Kantin Pabrik</span>
+            <div className="w-8 h-8 rounded-full bg-[#E6F9F0] text-[#2DBA7D] flex items-center justify-center">
               <Store className="w-4 h-4" />
             </div>
           </div>
           <p className="text-xl font-extrabold text-[#1C1B3A]">
-            {activeTenantsCount}{" "}
-            <span className="text-xs font-normal text-[#6F6B88]">/ {totalTenantsCount} Stand</span>
+            Buka Operasional
           </p>
           <div className="flex items-center gap-1.5 text-[10.5px]">
-            <span className="text-[#2DBA7D] font-bold">{activeTenantsCount} Stand Aktif</span>
-            {suspendedTenantsCount > 0 && (
-              <span className="text-red-500 font-medium">• {suspendedTenantsCount} Dibekukan</span>
-            )}
+            <span className="text-[#2DBA7D] font-bold">Shift 1 &amp; Shift 2 (06:30 - 21:00)</span>
           </div>
         </div>
 
-        {/* Card 2: Pending Approval */}
-        <div className="bg-white p-4.5 rounded-[20px] border border-[#E6E3F7] shadow-sm space-y-1">
+        {/* Card 2: Total Menu Aktif */}
+        <div className="bg-white p-5 rounded-[20px] border border-[#E6E3F7] shadow-xs space-y-1.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#6F6B88]">Menunggu Persetujuan</span>
-            <div className="w-8 h-8 rounded-full bg-[#FFF4E5] text-[#D97706] flex items-center justify-center">
-              <Clock className="w-4 h-4" />
+            <span className="text-xs font-semibold text-[#6F6B88]">Menu Makanan &amp; Minuman</span>
+            <div className="w-8 h-8 rounded-full bg-[#F5F3FF] text-[#4A3AFF] flex items-center justify-center">
+              <UtensilsCrossed className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-xl font-extrabold text-[#D97706]">{pendingTenantsCount} Pengajuan</p>
+          <p className="text-xl font-extrabold text-[#4A3AFF]">{canteenProducts.length} Menu Tersedia</p>
           <p className="text-[10.5px] text-[#6F6B88]">
-            {pendingTenantsCount > 0
-              ? "Perlu diverifikasi oleh Superadmin"
-              : "Semua pengajuan telah diproses"}
+            Makanan, Camilan &amp; Minuman Dingin
           </p>
         </div>
 
-        {/* Card 3: Total Omzet Seluruh Kantin */}
-        <div className="bg-white p-4.5 rounded-[20px] border border-[#E6E3F7] shadow-sm space-y-1">
+        {/* Card 3: Total Omzet Kantin */}
+        <div className="bg-white p-5 rounded-[20px] border border-[#E6E3F7] shadow-xs space-y-1.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#6F6B88]">Omzet Seluruh Stand</span>
+            <span className="text-xs font-semibold text-[#6F6B88]">Akumulasi Omzet Kantin</span>
             <div className="w-8 h-8 rounded-full bg-[#E6F9F0] text-[#2DBA7D] flex items-center justify-center">
               <TrendingUp className="w-4 h-4" />
             </div>
@@ -391,20 +198,20 @@ export const SuperadminCanteenManagementView: React.FC = () => {
           <p className="text-xl font-extrabold text-[#1C1B3A]">
             Rp {(totalCanteenRevenue / 1000000).toFixed(1)} Jt
           </p>
-          <p className="text-[10.5px] text-[#2DBA7D]">Akumulasi omzet mitra kantin</p>
+          <p className="text-[10.5px] text-[#2DBA7D]">Uang Tunai Kasir &amp; QRIS Statis Stand</p>
         </div>
 
-        {/* Card 4: Tanggal Cutoff & Pending Settlement */}
-        <div className="bg-white p-4.5 rounded-[20px] border border-[#E6E3F7] shadow-sm space-y-1">
+        {/* Card 4: Metode Pembayaran */}
+        <div className="bg-white p-5 rounded-[20px] border border-[#E6E3F7] shadow-xs space-y-1.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#6F6B88]">Jatuh Tempo Cutoff</span>
-            <div className="w-8 h-8 rounded-full bg-[#F5F3FF] text-[#4A3AFF] flex items-center justify-center">
-              <Calendar className="w-4 h-4" />
+            <span className="text-xs font-semibold text-[#6F6B88]">Metode Pembayaran Kasir</span>
+            <div className="w-8 h-8 rounded-full bg-[#FFF4E5] text-[#D97706] flex items-center justify-center">
+              <QrCode className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-xl font-extrabold text-[#4A3AFF]">25 Setiap Bulan</p>
+          <p className="text-xl font-extrabold text-[#1C1B3A]">Tunai &amp; QRIS Stand</p>
           <p className="text-[10.5px] text-[#6F6B88]">
-            Pending Settlement: <strong>Rp {(totalPendingSettlement / 1000000).toFixed(1)} Jt</strong>
+            Penerimaan langsung di stand kantin
           </p>
         </div>
       </div>
@@ -412,20 +219,15 @@ export const SuperadminCanteenManagementView: React.FC = () => {
       {/* 2. MAIN NAVIGATION TABS */}
       <div className="flex items-center gap-2 border-b border-[#E6E3F7] pb-3 overflow-x-auto">
         <button
-          onClick={() => setActiveTab("TENANTS")}
+          onClick={() => setActiveTab("PROFILE")}
           className={`py-2 px-4 rounded-full text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-            activeTab === "TENANTS"
+            activeTab === "PROFILE"
               ? "bg-[#4A3AFF] text-white shadow-sm shadow-[#4A3AFF]/25"
               : "bg-white text-[#6F6B88] border border-[#E6E3F7] hover:bg-[#F5F3FF] hover:text-[#4A3AFF]"
           }`}
         >
           <Store className="w-3.5 h-3.5" />
-          <span>Daftar Akun Mitra Kantin ({tenants.length})</span>
-          {pendingTenantsCount > 0 && (
-            <span className="w-4 h-4 rounded-full bg-[#FFB547] text-[#1C1B3A] text-[9px] font-bold flex items-center justify-center">
-              {pendingTenantsCount}
-            </span>
-          )}
+          <span>Profil Kantin Utama BIT</span>
         </button>
 
         <button
@@ -437,36 +239,7 @@ export const SuperadminCanteenManagementView: React.FC = () => {
           }`}
         >
           <Receipt className="w-3.5 h-3.5" />
-          <span>Monitoring Transaksi Karyawan</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab("SETTLEMENT")}
-          className={`py-2 px-4 rounded-full text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-            activeTab === "SETTLEMENT"
-              ? "bg-[#4A3AFF] text-white shadow-sm shadow-[#4A3AFF]/25"
-              : "bg-white text-[#6F6B88] border border-[#E6E3F7] hover:bg-[#F5F3FF] hover:text-[#4A3AFF]"
-          }`}
-        >
-          <DollarSign className="w-3.5 h-3.5" />
-          <span>Arus Kas &amp; Settlement Payroll</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab("UPDATES")}
-          className={`py-2 px-4 rounded-full text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-            activeTab === "UPDATES"
-              ? "bg-[#4A3AFF] text-white shadow-sm shadow-[#4A3AFF]/25"
-              : "bg-white text-[#6F6B88] border border-[#E6E3F7] hover:bg-[#F5F3FF] hover:text-[#4A3AFF]"
-          }`}
-        >
-          <FileText className="w-3.5 h-3.5" />
-          <span>Persetujuan Update Data Stand</span>
-          {pendingUpdateRequestsCount > 0 && (
-            <span className="w-4 h-4 rounded-full bg-[#FFB547] text-[#1C1B3A] text-[9px] font-bold flex items-center justify-center">
-              {pendingUpdateRequestsCount}
-            </span>
-          )}
+          <span>Monitoring Transaksi Makan Karyawan</span>
         </button>
 
         <button
@@ -478,211 +251,178 @@ export const SuperadminCanteenManagementView: React.FC = () => {
           }`}
         >
           <Sparkles className="w-3.5 h-3.5" />
-          <span>Bagi Hasil &amp; Broadcast Mitra</span>
+          <span>Pengumuman &amp; Broadcast Kasir</span>
         </button>
       </div>
 
       {/* ========================================================================= */}
-      {/* TAB 1: KELOLA AKUN MITRA KANTIN (MULTI-TENANT APPROVAL & MANAGEMENT)      */}
+      {/* TAB 1: PROFIL KANTIN UTAMA PABRIK BIT                                     */}
       {/* ========================================================================= */}
-      {activeTab === "TENANTS" && (
-        <div className="bg-white rounded-[22px] border border-[#E6E3F7] p-5 shadow-sm space-y-4">
-          {/* Filter Bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E6E3F7] pb-3.5">
-            <div className="flex items-center gap-2 overflow-x-auto pb-1">
-              <button
-                onClick={() => setTenantStatusFilter("ALL")}
-                className={`py-1.5 px-3 rounded-full text-xs font-bold cursor-pointer ${
-                  tenantStatusFilter === "ALL"
-                    ? "bg-[#4A3AFF] text-white"
-                    : "bg-[#FAFAFC] text-[#6F6B88] border border-[#E6E3F7]"
-                }`}
-              >
-                Semua ({tenants.length})
-              </button>
-              <button
-                onClick={() => setTenantStatusFilter("PENDING_APPROVAL")}
-                className={`py-1.5 px-3 rounded-full text-xs font-bold cursor-pointer ${
-                  tenantStatusFilter === "PENDING_APPROVAL"
-                    ? "bg-[#FFB547] text-[#1C1B3A]"
-                    : "bg-[#FAFAFC] text-[#6F6B88] border border-[#E6E3F7]"
-                }`}
-              >
-                Menunggu Persetujuan ({pendingTenantsCount})
-              </button>
-              <button
-                onClick={() => setTenantStatusFilter("ACTIVE")}
-                className={`py-1.5 px-3 rounded-full text-xs font-bold cursor-pointer ${
-                  tenantStatusFilter === "ACTIVE"
-                    ? "bg-[#2DBA7D] text-white"
-                    : "bg-[#FAFAFC] text-[#6F6B88] border border-[#E6E3F7]"
-                }`}
-              >
-                Aktif ({activeTenantsCount})
-              </button>
-              <button
-                onClick={() => setTenantStatusFilter("SUSPENDED")}
-                className={`py-1.5 px-3 rounded-full text-xs font-bold cursor-pointer ${
-                  tenantStatusFilter === "SUSPENDED"
-                    ? "bg-red-600 text-white"
-                    : "bg-[#FAFAFC] text-[#6F6B88] border border-[#E6E3F7]"
-                }`}
-              >
-                Dibekukan ({suspendedTenantsCount})
-              </button>
+      {activeTab === "PROFILE" && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            {/* Left 2 Cols: Detail Profil Kantin */}
+            <div className="lg:col-span-2 bg-white rounded-[22px] border border-[#E6E3F7] p-6 shadow-xs space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E6E3F7] pb-5">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-[18px] bg-gradient-to-br from-[#4A3AFF] to-[#8E79F5] text-white flex items-center justify-center font-bold text-2xl shadow-md shrink-0">
+                    <UtensilsCrossed className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h2 className="text-lg font-bold text-[#1C1B3A]">
+                        Kantin Utama Koperasi PT. Bhakti Idola Tama
+                      </h2>
+                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[#E6F9F0] text-[#2DBA7D]">
+                        Aktif Beroperasi
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#6F6B88] mt-0.5">
+                      Melayani sarapan, makan siang, dan makan malam seluruh karyawan pabrik PT. Bhakti Idola Tama.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Info Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <div className="p-4 rounded-[16px] bg-[#FAFAFC] border border-[#E6E3F7] space-y-1">
+                  <span className="text-[#6F6B88] font-medium flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-[#4A3AFF]" />
+                    Lokasi Stand Kantin
+                  </span>
+                  <p className="font-bold text-[#1C1B3A] text-sm">Area Kantin Pabrik Lantai 1</p>
+                  <p className="text-[11px] text-[#6F6B88]">Kawasan Industri PT. Bhakti Idola Tama, Jakarta Barat</p>
+                </div>
+
+                <div className="p-4 rounded-[16px] bg-[#FAFAFC] border border-[#E6E3F7] space-y-1">
+                  <span className="text-[#6F6B88] font-medium flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-[#4A3AFF]" />
+                    Jam Operasional Layanan
+                  </span>
+                  <p className="font-bold text-[#1C1B3A] text-sm">Shift 1 &amp; Shift 2 (06:30 - 21:00 WIB)</p>
+                  <p className="text-[11px] text-[#2DBA7D] font-semibold">Buka Setiap Hari Kerja (Senin - Sabtu)</p>
+                </div>
+
+                <div className="p-4 rounded-[16px] bg-[#FAFAFC] border border-[#E6E3F7] space-y-1">
+                  <span className="text-[#6F6B88] font-medium flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5 text-[#4A3AFF]" />
+                    Mitra Pengelola &amp; Kontak
+                  </span>
+                  <p className="font-bold text-[#1C1B3A] text-sm">Bu Siti Rahayu</p>
+                  <p className="text-[11px] text-[#6F6B88]">WhatsApp: 0812-3456-7890</p>
+                </div>
+
+                <div className="p-4 rounded-[16px] bg-[#FAFAFC] border border-[#E6E3F7] space-y-1">
+                  <span className="text-[#6F6B88] font-medium flex items-center gap-1.5">
+                    <CreditCard className="w-3.5 h-3.5 text-[#4A3AFF]" />
+                    Metode Pembayaran Aktif
+                  </span>
+                  <p className="font-bold text-[#1C1B3A] text-sm">Uang Tunai (Cash) &amp; QRIS Stand</p>
+                  <p className="text-[11px] text-[#6F6B88]">Penerimaan langsung on-the-spot di kasir</p>
+                </div>
+              </div>
+
+              {/* Menu Spotlight */}
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-sm text-[#1C1B3A]">
+                    Daftar Menu Siap Saji Kantin
+                  </h3>
+                  <span className="text-xs text-[#6F6B88]">
+                    Total: <strong>{canteenProducts.length} Menu Makanan &amp; Minuman</strong>
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {canteenProducts.map((prd) => (
+                    <div
+                      key={prd.id}
+                      className="p-3.5 rounded-[14px] bg-[#FAFAFC] border border-[#E6E3F7] flex items-center justify-between gap-3"
+                    >
+                      <div>
+                        <p className="font-bold text-xs text-[#1C1B3A]">{prd.name}</p>
+                        <p className="text-[11px] text-[#6F6B88] mt-0.5">
+                          Harga Khusus Anggota BIT: <strong className="text-[#4A3AFF]">Rp {prd.memberPrice.toLocaleString("id-ID")}</strong>
+                        </p>
+                      </div>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#E6F9F0] text-[#2DBA7D] shrink-0">
+                        Stok Ready
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
 
-            <div className="relative w-full sm:w-64">
-              <Search className="w-3.5 h-3.5 text-[#6F6B88] absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Cari stand, pemilik, lokasi..."
-                value={tenantSearchTerm}
-                onChange={(e) => setTenantSearchTerm(e.target.value)}
-                className="w-full bg-[#FAFAFC] border border-[#E6E3F7] rounded-full pl-8 pr-3 py-1.5 text-xs text-[#1C1B3A] focus:outline-none focus:border-[#4A3AFF]"
-              />
+            {/* Right 1 Col: Account Management Box (Unified in /users) */}
+            <div className="space-y-6">
+              {/* Account Management Card */}
+              <div className="bg-white rounded-[22px] border border-[#E6E3F7] p-6 shadow-xs space-y-4">
+                <div className="flex items-center gap-2.5 text-xs font-bold text-[#4A3AFF]">
+                  <UserCheck className="w-4 h-4" />
+                  <span>Akun Login Kasir Kantin</span>
+                </div>
+
+                <div className="space-y-1">
+                  <h3 className="text-base font-bold text-[#1C1B3A]">
+                    Manajemen Akun Terpusat
+                  </h3>
+                  <p className="text-xs text-[#6F6B88] leading-relaxed">
+                    Sesuai kebijakan satu kantin tunggal, akun login pengelola/kasir kantin dikelola terpusat di menu <strong>Manajemen Pengguna</strong>.
+                  </p>
+                </div>
+
+                {/* Account Details */}
+                <div className="p-4 rounded-[16px] bg-[#F5F3FF] border border-[#E6E3F7] space-y-2.5 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#6F6B88]">Username Kasir:</span>
+                    <strong className="text-[#1C1B3A] font-mono bg-white px-2 py-0.5 rounded border border-[#E6E3F7]">
+                      kasir.kantin
+                    </strong>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#6F6B88]">Nama Petugas:</span>
+                    <strong className="text-[#1C1B3A]">Agus Setiawan</strong>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#6F6B88]">Role Sistem:</span>
+                    <span className="font-bold text-[#D97706] bg-[#FFF4E5] px-2 py-0.5 rounded-full text-[10px] border border-[#FDE68A]">
+                      PENGELOLA_KANTIN
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#6F6B88]">Status Akun:</span>
+                    <span className="font-bold text-[#2DBA7D] flex items-center gap-1 text-[11px]">
+                      <span className="w-2 h-2 rounded-full bg-[#2DBA7D]" />
+                      Aktif (Protected)
+                    </span>
+                  </div>
+                </div>
+
+                {/* Direct Link to Users Management */}
+                <Link
+                  href="/users"
+                  className="w-full py-3 px-4 rounded-full bg-white border border-[#4A3AFF] text-[#4A3AFF] hover:bg-[#F5F3FF] font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-colors"
+                >
+                  <Users className="w-4 h-4" />
+                  <span>Buka Menu Manajemen Pengguna</span>
+                </Link>
+              </div>
+
+              {/* Cashflow Notice Card */}
+              <div className="bg-gradient-to-br from-[#FAFAFC] to-[#F5F3FF] rounded-[22px] border border-[#E6E3F7] p-6 shadow-xs space-y-3">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#2DBA7D]">
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>Ketentuan Arus Kas Kantin</span>
+                </div>
+                <p className="text-xs text-[#1C1B3A] leading-relaxed">
+                  Seluruh pembayaran makanan &amp; minuman di kasir stand diterima langsung secara <strong>Tunai (Cash Fisik)</strong> atau <strong>QRIS Statis Stand</strong>. Tidak ada pemotongan gaji bulanan (payroll cutoff) untuk transaksi kantin.
+                </p>
+              </div>
             </div>
-          </div>
 
-          {/* Tenants Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left">
-              <thead className="bg-[#FAFAFC] text-[#6F6B88] font-bold border-y border-[#E6E3F7]">
-                <tr>
-                  <th className="py-3 px-3">Nama Stand &amp; Kategori</th>
-                  <th className="py-3 px-3">Pemilik &amp; Kontak</th>
-                  <th className="py-3 px-3">Lokasi Stand</th>
-                  <th className="py-3 px-3">Rekening Pencairan</th>
-                  <th className="py-3 px-3">Status Akun</th>
-                  <th className="py-3 px-3 text-right">Aksi Superadmin</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#E6E3F7]">
-                {filteredTenants.map((t) => (
-                  <tr key={t.id} className="hover:bg-[#F5F3FF]/40 transition-colors">
-                    <td className="py-3 px-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-10 h-10 rounded-[12px] bg-[#FAFAFC] border border-[#E6E3F7] overflow-hidden relative shrink-0 flex items-center justify-center">
-                          {t.avatarUrl ? (
-                            <Image
-                              src={t.avatarUrl}
-                              alt={t.name}
-                              fill
-                              sizes="40px"
-                              className="object-contain p-1"
-                            />
-                          ) : (
-                            <Store className="w-5 h-5 text-[#4A3AFF]" />
-                          )}
-                        </div>
-                        <div>
-                          <p className="font-bold text-[#1C1B3A]">{t.name}</p>
-                          <p className="text-[10.5px] text-[#6F6B88]">{t.category}</p>
-                        </div>
-                      </div>
-                    </td>
-
-                    <td className="py-3 px-3">
-                      <p className="font-semibold text-[#1C1B3A]">{t.ownerName}</p>
-                      <p className="text-[10px] text-[#6F6B88]">{t.phone}</p>
-                    </td>
-
-                    <td className="py-3 px-3">
-                      <span className="flex items-center gap-1 text-[#1C1B3A]">
-                        <MapPin className="w-3 h-3 text-[#4A3AFF]" />
-                        {t.location}
-                      </span>
-                    </td>
-
-                    <td className="py-3 px-3">
-                      <p className="font-semibold text-[#1C1B3A]">{t.bankName}</p>
-                      <p className="text-[10px] text-[#6F6B88]">{t.bankAccountNumber}</p>
-                    </td>
-
-                    <td className="py-3 px-3">
-                      <span
-                        className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
-                          t.status === "ACTIVE"
-                            ? "bg-[#E6F9F0] text-[#2DBA7D] border border-[#A7F3D0]"
-                            : t.status === "PENDING_APPROVAL"
-                            ? "bg-[#FFF4E5] text-[#D97706] border border-[#FFE0B2]"
-                            : t.status === "SUSPENDED"
-                            ? "bg-red-50 text-red-600 border border-red-200"
-                            : "bg-gray-100 text-gray-500"
-                        }`}
-                      >
-                        {t.status === "ACTIVE"
-                          ? "✓ Aktif"
-                          : t.status === "PENDING_APPROVAL"
-                          ? "Menunggu Approval"
-                          : t.status === "SUSPENDED"
-                          ? "Dibekukan"
-                          : "Ditolak"}
-                      </span>
-                    </td>
-
-                    <td className="py-3 px-3 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        {/* Approval Buttons for PENDING */}
-                        {t.status === "PENDING_APPROVAL" && (
-                          <>
-                            <button
-                              onClick={() => handleOpenActionModal(t, "APPROVE")}
-                              title="Setujui Pengajuan Stand"
-                              className="py-1 px-2.5 rounded-full bg-[#2DBA7D] hover:bg-[#259b67] text-white font-bold text-[11px] flex items-center gap-1 shadow-xs cursor-pointer"
-                            >
-                              <Check className="w-3 h-3" />
-                              <span>Setujui</span>
-                            </button>
-                            <button
-                              onClick={() => handleOpenActionModal(t, "REJECT")}
-                              title="Tolak Pengajuan Stand"
-                              className="py-1 px-2.5 rounded-full bg-white hover:bg-red-50 text-red-600 border border-red-200 font-bold text-[11px] flex items-center gap-1 cursor-pointer"
-                            >
-                              <X className="w-3 h-3" />
-                              <span>Tolak</span>
-                            </button>
-                          </>
-                        )}
-
-                        {/* Actions for ACTIVE */}
-                        {t.status === "ACTIVE" && (
-                          <button
-                            onClick={() => handleOpenActionModal(t, "SUSPEND")}
-                            title="Bekukan Akun Stand (Nonaktifkan Sementara)"
-                            className="py-1 px-2.5 rounded-full bg-white hover:bg-red-50 text-red-600 border border-red-200 font-bold text-[11px] flex items-center gap-1 cursor-pointer"
-                          >
-                            <Ban className="w-3 h-3" />
-                            <span>Bekukan</span>
-                          </button>
-                        )}
-
-                        {/* Actions for SUSPENDED */}
-                        {t.status === "SUSPENDED" && (
-                          <button
-                            onClick={() => handleOpenActionModal(t, "REACTIVATE")}
-                            title="Aktifkan Kembali Akun Stand"
-                            className="py-1 px-2.5 rounded-full bg-[#4A3AFF] hover:bg-[#3D2EE0] text-white font-bold text-[11px] flex items-center gap-1 shadow-xs cursor-pointer"
-                          >
-                            <RefreshCw className="w-3 h-3" />
-                            <span>Aktifkan</span>
-                          </button>
-                        )}
-
-                        {/* Delete Button */}
-                        <button
-                          onClick={() => handleOpenActionModal(t, "DELETE")}
-                          title="Hapus Data Akun Stand"
-                          className="p-1.5 rounded-full hover:bg-red-50 text-[#A5A2B8] hover:text-red-500 cursor-pointer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </div>
         </div>
       )}
@@ -691,42 +431,73 @@ export const SuperadminCanteenManagementView: React.FC = () => {
       {/* TAB 2: MONITORING AKTIVITAS TRANSAKSI KARYAWAN                            */}
       {/* ========================================================================= */}
       {activeTab === "ACTIVITIES" && (
-        <div className="bg-white rounded-[22px] border border-[#E6E3F7] p-5 shadow-sm space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E6E3F7] pb-3.5">
+        <div className="bg-white rounded-[22px] border border-[#E6E3F7] p-6 shadow-xs space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#E6E3F7] pb-4">
             <div>
               <h2 className="text-sm font-bold text-[#1C1B3A]">
-                Log Transaksi &amp; Arus Kas Belanja Karyawan
+                Log Transaksi Makan &amp; Belanja Karyawan
               </h2>
               <p className="text-xs text-[#6F6B88]">
-                Pantau seluruh aktivitas belanja karyawan di berbagai mitra kantin secara transparan.
+                Pantau seluruh aktivitas transaksi belanja makanan dan minuman karyawan di kasir kantin pabrik.
               </p>
             </div>
 
-            {/* Filters */}
-            <div className="flex flex-wrap items-center gap-2">
-              <select
-                value={activityTenantFilter}
-                onChange={(e) => setActivityTenantFilter(e.target.value)}
-                className="bg-[#FAFAFC] border border-[#E6E3F7] rounded-full px-3 py-1.5 text-xs text-[#1C1B3A]"
-              >
-                <option value="ALL">Semua Stand Kantin</option>
-                {tenants.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
+            {/* Filters & Export Buttons */}
+            <div className="flex flex-wrap items-center gap-2.5">
+              <div className="relative w-full sm:w-56">
+                <Search className="w-3.5 h-3.5 text-[#6F6B88] absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Cari karyawan / menu..."
+                  value={activitySearchTerm}
+                  onChange={(e) => setActivitySearchTerm(e.target.value)}
+                  className="w-full bg-[#FAFAFC] border border-[#E6E3F7] rounded-full pl-8.5 pr-3 py-2 text-xs text-[#1C1B3A] focus:outline-none focus:border-[#4A3AFF]"
+                />
+              </div>
 
               <select
                 value={activityPaymentFilter}
                 onChange={(e) => setActivityPaymentFilter(e.target.value)}
-                className="bg-[#FAFAFC] border border-[#E6E3F7] rounded-full px-3 py-1.5 text-xs text-[#1C1B3A]"
+                className="bg-[#FAFAFC] border border-[#E6E3F7] rounded-full px-3 py-2 text-xs font-semibold text-[#1C1B3A] focus:outline-none focus:border-[#4A3AFF] cursor-pointer"
               >
                 <option value="ALL">Semua Metode Pembayaran</option>
-                <option value="POTONG_GAJI">Potong Gaji Payroll</option>
-                <option value="SALDO_KOPERASI">Saldo Koperasi</option>
-                <option value="QRIS_TUNAI">QRIS / Tunai</option>
+                <option value="CASH_TUNAI">Uang Tunai (Cash)</option>
+                <option value="QRIS_TUNAI">QRIS Statis Stand</option>
               </select>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const cfg = buildCanteenSuperadminReportConfig(filteredActivities, "September 2026");
+                  exportToCsv({
+                    filename: "Laporan-Aktivitas-Kantin-September-2026",
+                    columns: cfg.columns,
+                    data: cfg.data,
+                    totalRow: cfg.totalRow,
+                    reportTitle: cfg.title,
+                    period: cfg.period,
+                  });
+                }}
+                className="px-3.5 py-2 rounded-full bg-[#E6F9F0] border border-[#2DBA7D]/30 text-[#2DBA7D] hover:bg-[#2DBA7D] hover:text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                title="Unduh Spreadsheet Excel (.csv)"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>Export Excel</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const cfg = buildCanteenSuperadminReportConfig(filteredActivities, "September 2026");
+                  setReportConfig(cfg);
+                  setIsReportModalOpen(true);
+                }}
+                className="px-4 py-2 rounded-full bg-[#4A3AFF] hover:bg-[#3D2EE0] text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+                title="Buka Pratinjau & Cetak PDF Resmi"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                <span>Cetak PDF Laporan</span>
+              </button>
             </div>
           </div>
 
@@ -737,67 +508,65 @@ export const SuperadminCanteenManagementView: React.FC = () => {
                 <tr>
                   <th className="py-3 px-3">Waktu Belanja</th>
                   <th className="py-3 px-3">Identitas Karyawan</th>
-                  <th className="py-3 px-3">Stand Kantin</th>
                   <th className="py-3 px-3">Item yang Dibeli</th>
                   <th className="py-3 px-3">Total Belanja</th>
                   <th className="py-3 px-3">Metode Bayar</th>
-                  <th className="py-3 px-3">Jatuh Tempo Cutoff</th>
+                  <th className="py-3 px-3">Status Kas</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#E6E3F7]">
                 {filteredActivities.map((act) => (
                   <tr key={act.id} className="hover:bg-[#F5F3FF]/40 transition-colors">
-                    <td className="py-3 px-3 text-[#6F6B88] whitespace-nowrap">
+                    <td className="py-3.5 px-3 text-[#6F6B88] whitespace-nowrap">
                       {act.transactionTime}
                     </td>
 
-                    <td className="py-3 px-3">
+                    <td className="py-3.5 px-3">
                       <p className="font-bold text-[#1C1B3A]">{act.employeeName}</p>
-                      <p className="text-[10px] text-[#6F6B88]">
+                      <p className="text-[10.5px] text-[#6F6B88]">
                         NIK: {act.employeeNik} • {act.department}
                       </p>
                     </td>
 
-                    <td className="py-3 px-3 font-semibold text-[#1C1B3A]">
-                      {act.tenantName}
-                    </td>
-
-                    <td className="py-3 px-3 text-[#1C1B3A] max-w-xs truncate">
+                    <td className="py-3.5 px-3 text-[#1C1B3A] max-w-xs truncate">
                       {act.itemsSummary}
                     </td>
 
-                    <td className="py-3 px-3">
-                      <span className="font-bold text-[#4A3AFF]">
+                    <td className="py-3.5 px-3">
+                      <span className="font-bold text-[#4A3AFF] text-sm">
                         Rp {act.totalAmount.toLocaleString("id-ID")}
                       </span>
-                      <span className="text-[10px] text-[#2DBA7D] block">
-                        Hemat: Rp {act.memberSavings.toLocaleString("id-ID")}
+                      <span className="text-[10px] text-[#2DBA7D] block font-semibold">
+                        Diskon Anggota: Rp {act.memberSavings.toLocaleString("id-ID")}
                       </span>
                     </td>
 
-                    <td className="py-3 px-3">
+                    <td className="py-3.5 px-3">
                       <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          act.paymentMethod === "POTONG_GAJI"
+                        className={`text-[10px] font-bold px-2.5 py-1 rounded-full inline-flex items-center gap-1 ${
+                          act.paymentMethod === "QRIS_TUNAI"
                             ? "bg-[#F5F3FF] text-[#4A3AFF] border border-[#E6E3F7]"
-                            : act.paymentMethod === "SALDO_KOPERASI"
-                            ? "bg-[#E6F9F0] text-[#2DBA7D] border border-[#A7F3D0]"
-                            : "bg-[#FFF4E5] text-[#D97706] border border-[#FFE0B2]"
+                            : "bg-[#E6F9F0] text-[#2DBA7D] border border-[#A7F3D0]"
                         }`}
                       >
-                        {act.paymentMethod === "POTONG_GAJI"
-                          ? "Auto Payroll"
-                          : act.paymentMethod === "SALDO_KOPERASI"
-                          ? "Saldo Simpanan"
-                          : "QRIS/Tunai"}
+                        {act.paymentMethod === "QRIS_TUNAI" ? (
+                          <>
+                            <QrCode className="w-3 h-3" />
+                            <span>QRIS Statis Stand</span>
+                          </>
+                        ) : (
+                          <>
+                            <Banknote className="w-3 h-3" />
+                            <span>Uang Tunai (Cash)</span>
+                          </>
+                        )}
                       </span>
                     </td>
 
-                    <td className="py-3 px-3">
-                      <div className="flex items-center gap-1.5 text-xs">
-                        <Calendar className="w-3.5 h-3.5 text-[#4A3AFF]" />
-                        <span className="font-semibold text-[#1C1B3A]">{act.payrollCutoffDate}</span>
-                      </div>
+                    <td className="py-3.5 px-3">
+                      <span className="text-[10.5px] font-bold text-[#2DBA7D] bg-[#E6F9F0] px-2.5 py-0.5 rounded-full">
+                        ✓ Lunas Langsung
+                      </span>
                     </td>
                   </tr>
                 ))}
@@ -808,608 +577,44 @@ export const SuperadminCanteenManagementView: React.FC = () => {
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 3: ARUS KAS & SETTLEMENT PAYROLL KE MITRA KANTIN                      */}
+      {/* TAB 3: PENGUMUMAN & BROADCAST KASIR KANTIN                                */}
       {/* ========================================================================= */}
-      {activeTab === "SETTLEMENT" && (
-        <div className="space-y-6">
-          {/* Explanation Box of Fund Flow */}
-          <div className="bg-gradient-to-r from-[#F5F3FF] to-[#EDE9FE] rounded-[20px] border border-[#E6E3F7] p-5 space-y-2">
+      {activeTab === "SETTINGS" && (
+        <div className="bg-white rounded-[22px] border border-[#E6E3F7] p-6 shadow-xs space-y-6 max-w-3xl">
+          <div className="space-y-1 border-b border-[#E6E3F7] pb-4">
             <div className="flex items-center gap-2 text-xs font-bold text-[#4A3AFF]">
-              <ShieldCheck className="w-4 h-4" />
-              <span>Mekanisme Arus Kas &amp; Settlement Potong Gaji Kopkar BIT</span>
+              <Send className="w-4 h-4" />
+              <span>Broadcast Pesan &amp; Pengumuman Kasir Kantin</span>
             </div>
-            <p className="text-xs text-[#1C1B3A] leading-relaxed">
-              1. <strong>Karyawan Belanja</strong>: Transaksi dicatat sebagai piutang tagihan payroll anggota.<br />
-              2. <strong>Cutoff Payroll (Tgl 25)</strong>: Sistem otomatis memotong tagihan belanja kantin dari gaji bulanan karyawan.<br />
-              3. <strong>Settlement ke Mitra Stand</strong>: Koperasi mencairkan dana hasil penjualan ke rekening bank masing-masing pemilik stand setelah dikurangi iuran platform 1%.
+            <h3 className="text-base font-bold text-[#1C1B3A]">
+              Kirim Notifikasi ke Layar POS Kasir Kantin
+            </h3>
+            <p className="text-xs text-[#6F6B88]">
+              Kirimkan pengumuman operasional penting (misal: jadwal menu spesial hari ini, jadwal libur operasional pabrik, atau kebersihan stand).
             </p>
           </div>
 
-          {/* Settlement Batches Table */}
-          <div className="bg-white rounded-[22px] border border-[#E6E3F7] p-5 shadow-sm space-y-4">
-            <div className="flex items-center justify-between border-b border-[#E6E3F7] pb-3">
-              <div>
-                <h3 className="text-sm font-bold text-[#1C1B3A]">
-                  Rekapitulasi Settlement Dana ke Pemilik Stand
-                </h3>
-                <p className="text-xs text-[#6F6B88]">
-                  Pencairan dana hasil penjualan dari rekening kas Koperasi ke rekening bank pemilik kantin.
-                </p>
-              </div>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs text-left">
-                <thead className="bg-[#FAFAFC] text-[#6F6B88] font-bold border-y border-[#E6E3F7]">
-                  <tr>
-                    <th className="py-3 px-3">Periode &amp; Stand</th>
-                    <th className="py-3 px-3">Rekening Bank Tujuan</th>
-                    <th className="py-3 px-3">Total Transaksi</th>
-                    <th className="py-3 px-3">Omzet Kotor</th>
-                    <th className="py-3 px-3">Iuran Kopkar (1%)</th>
-                    <th className="py-3 px-3">Dana Bersih Ditransfer</th>
-                    <th className="py-3 px-3">Status</th>
-                    <th className="py-3 px-3 text-right">Eksekusi</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#E6E3F7]">
-                  {settlements.map((stl) => (
-                    <tr key={stl.id} className="hover:bg-[#F5F3FF]/40">
-                      <td className="py-3 px-3">
-                        <p className="font-bold text-[#1C1B3A]">{stl.tenantName}</p>
-                        <p className="text-[10.5px] text-[#6F6B88]">{stl.period}</p>
-                      </td>
-
-                      <td className="py-3 px-3">
-                        <p className="font-semibold text-[#1C1B3A]">{stl.bankName}</p>
-                        <p className="text-[10px] text-[#6F6B88]">
-                          {stl.bankAccountNumber} (a.n {stl.bankAccountName})
-                        </p>
-                      </td>
-
-                      <td className="py-3 px-3">{stl.totalTransactions} Transaksi</td>
-
-                      <td className="py-3 px-3 font-semibold text-[#1C1B3A]">
-                        Rp {stl.grossRevenue.toLocaleString("id-ID")}
-                      </td>
-
-                      <td className="py-3 px-3 text-red-500 font-semibold">
-                        -Rp {stl.platformFee.toLocaleString("id-ID")}
-                      </td>
-
-                      <td className="py-3 px-3 font-extrabold text-[#4A3AFF]">
-                        Rp {stl.netDisbursement.toLocaleString("id-ID")}
-                      </td>
-
-                      <td className="py-3 px-3">
-                        <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                            stl.status === "PROCESSED"
-                              ? "bg-[#E6F9F0] text-[#2DBA7D]"
-                              : "bg-[#FFF4E5] text-[#D97706]"
-                          }`}
-                        >
-                          {stl.status === "PROCESSED"
-                            ? `✓ Ditransfer (${stl.processedAt})`
-                            : "Siap Ditransfer (Cutoff 25)"}
-                        </span>
-                      </td>
-
-                      <td className="py-3 px-3 text-right">
-                        {stl.status === "PENDING" ? (
-                          <button
-                            onClick={() => handleProcessSettlement(stl.id)}
-                            className="py-1.5 px-3 rounded-full bg-[#4A3AFF] hover:bg-[#3D2EE0] text-white font-bold text-xs shadow-xs cursor-pointer"
-                          >
-                            Transfer Dana
-                          </button>
-                        ) : (
-                          <span className="text-[11px] text-[#2DBA7D] font-bold">Lunas</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* TAB 4: PERSETUJUAN PEMBARUAN DATA STAND (MULTI-TENANT PROFILE UPDATES)    */}
-      {/* ========================================================================= */}
-      {activeTab === "UPDATES" && (
-        <div className="bg-white rounded-[22px] border border-[#E6E3F7] p-5 shadow-sm space-y-4">
-          {/* Header & Filter Bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E6E3F7] pb-3.5">
-            <div>
-              <h3 className="text-sm font-bold text-[#1C1B3A]">
-                Pengajuan Perubahan Data Stand &amp; Rekening Pencairan
-              </h3>
-              <p className="text-xs text-[#6F6B88]">
-                Mitra kantin mengajukan permohonan pembaruan data legalitas, kepemilikan, atau rekening bank untuk verifikasi Superadmin.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2 overflow-x-auto pb-1">
-              <button
-                onClick={() => setUpdateRequestFilter("ALL")}
-                className={`py-1.5 px-3 rounded-full text-xs font-bold cursor-pointer ${
-                  updateRequestFilter === "ALL"
-                    ? "bg-[#4A3AFF] text-white"
-                    : "bg-[#FAFAFC] text-[#6F6B88] border border-[#E6E3F7]"
-                }`}
-              >
-                Semua ({updateRequests.length})
-              </button>
-              <button
-                onClick={() => setUpdateRequestFilter("PENDING_APPROVAL")}
-                className={`py-1.5 px-3 rounded-full text-xs font-bold cursor-pointer ${
-                  updateRequestFilter === "PENDING_APPROVAL"
-                    ? "bg-[#FFB547] text-[#1C1B3A]"
-                    : "bg-[#FAFAFC] text-[#6F6B88] border border-[#E6E3F7]"
-                }`}
-              >
-                Menunggu ({pendingUpdateRequestsCount})
-              </button>
-              <button
-                onClick={() => setUpdateRequestFilter("APPROVED")}
-                className={`py-1.5 px-3 rounded-full text-xs font-bold cursor-pointer ${
-                  updateRequestFilter === "APPROVED"
-                    ? "bg-[#2DBA7D] text-white"
-                    : "bg-[#FAFAFC] text-[#6F6B88] border border-[#E6E3F7]"
-                }`}
-              >
-                Disetujui ({updateRequests.filter((r) => r.status === "APPROVED").length})
-              </button>
-              <button
-                onClick={() => setUpdateRequestFilter("REJECTED")}
-                className={`py-1.5 px-3 rounded-full text-xs font-bold cursor-pointer ${
-                  updateRequestFilter === "REJECTED"
-                    ? "bg-red-600 text-white"
-                    : "bg-[#FAFAFC] text-[#6F6B88] border border-[#E6E3F7]"
-                }`}
-              >
-                Ditolak ({updateRequests.filter((r) => r.status === "REJECTED").length})
-              </button>
-            </div>
-          </div>
-
-          {/* List of Update Requests */}
-          {filteredUpdateRequests.length === 0 ? (
-            <div className="py-12 text-center text-xs text-[#6F6B88]">
-              <FileText className="w-8 h-8 text-[#A09CB5] mx-auto mb-2 opacity-50" />
-              <p className="font-bold text-[#1C1B3A]">Tidak ada pengajuan pembaruan data.</p>
-              <p>Pengajuan dari pemilik stand akan muncul di sini secara real-time.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {filteredUpdateRequests.map((req) => {
-                const currentTenant = tenants.find((t) => t.id === req.tenantId);
-                const fieldLabels: Record<string, string> = {
-                  name: "Nama Stand Kantin",
-                  ownerName: "Nama Pemilik Stand",
-                  ownerNik: "NIK Pemilik",
-                  phone: "Nomor WhatsApp / HP",
-                  bankName: "Nama Bank Pencairan",
-                  bankAccountNumber: "Nomor Rekening",
-                  bankAccountName: "Atas Nama Rekening",
-                  category: "Kategori Stand",
-                  location: "Lokasi Stand di Pabrik",
-                };
-
-                return (
-                  <div
-                    key={req.id}
-                    className="p-4 rounded-[18px] border border-[#E6E3F7] bg-[#FAFAFC] hover:border-[#4A3AFF]/40 transition-all space-y-3"
-                  >
-                    {/* Header */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E6E3F7] pb-2.5">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full bg-[#F5F3FF] text-[#4A3AFF] flex items-center justify-center font-bold text-xs border border-[#E6E3F7]">
-                          <Store className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-xs text-[#1C1B3A]">{req.tenantName}</span>
-                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white border border-[#E6E3F7] text-[#6F6B88]">
-                              ID: {req.tenantId}
-                            </span>
-                          </div>
-                          <p className="text-[10.5px] text-[#6F6B88]">
-                            Diajukan pada: <strong>{req.submittedAt}</strong>
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Status Badge */}
-                      <div>
-                        {req.status === "PENDING_APPROVAL" && (
-                          <span className="text-[10.5px] font-bold px-3 py-1 rounded-full bg-[#FFF4E5] text-[#D97706] border border-[#FDE68A] flex items-center gap-1.5">
-                            <Clock className="w-3 h-3" />
-                            <span>Menunggu Persetujuan</span>
-                          </span>
-                        )}
-                        {req.status === "APPROVED" && (
-                          <span className="text-[10.5px] font-bold px-3 py-1 rounded-full bg-[#E6F9F0] text-[#2DBA7D] border border-[#A7F3D0] flex items-center gap-1.5">
-                            <CheckCircle2 className="w-3 h-3" />
-                            <span>Disetujui &amp; Diterapkan ({req.reviewedAt})</span>
-                          </span>
-                        )}
-                        {req.status === "REJECTED" && (
-                          <span className="text-[10.5px] font-bold px-3 py-1 rounded-full bg-red-50 text-red-600 border border-red-200 flex items-center gap-1.5">
-                            <X className="w-3 h-3" />
-                            <span>Ditolak ({req.reviewedAt})</span>
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Diff / Changes Table */}
-                    <div className="bg-white rounded-[14px] border border-[#E6E3F7] p-3 overflow-x-auto">
-                      <p className="text-[11px] font-bold text-[#6F6B88] mb-2">
-                        Rincian Perubahan Data yang Diajukan:
-                      </p>
-                      <table className="w-full text-xs">
-                        <thead>
-                          <tr className="border-b border-[#E6E3F7] text-[#6F6B88] text-left text-[11px]">
-                            <th className="pb-1.5 font-bold">Kolom Data</th>
-                            <th className="pb-1.5 font-bold">Data Sebelumnya (Saat Ini)</th>
-                            <th className="pb-1.5 font-bold text-[#4A3AFF]">Data Baru yang Diajukan</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[#F5F3FF]">
-                          {Object.entries(req.requestedFields).map(([key, newVal]) => {
-                            const oldVal = currentTenant ? (currentTenant as any)[key] : "-";
-                            return (
-                              <tr key={key} className="py-2">
-                                <td className="py-2 font-semibold text-[#1C1B3A]">
-                                  {fieldLabels[key] || key}
-                                </td>
-                                <td className="py-2 text-[#6F6B88]">
-                                  {String(oldVal || "-")}
-                                </td>
-                                <td className="py-2 font-bold text-[#4A3AFF] bg-[#F5F3FF]/50 px-2 rounded">
-                                  {String(newVal || "-")}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    {/* Reason */}
-                    <div className="p-3 rounded-[12px] bg-[#FFFBEB] border border-[#FDE68A] text-xs space-y-0.5">
-                      <span className="font-bold text-[#92400E]">Alasan Pembaruan:</span>
-                      <p className="text-[#B45309]">{req.reason}</p>
-                    </div>
-
-                    {/* Admin Notes if reviewed */}
-                    {req.adminNotes && (
-                      <div className="p-3 rounded-[12px] bg-white border border-[#E6E3F7] text-xs space-y-0.5">
-                        <span className="font-bold text-[#1C1B3A]">Catatan Superadmin:</span>
-                        <p className="text-[#6F6B88]">{req.adminNotes}</p>
-                      </div>
-                    )}
-
-                    {/* Action Bar for Pending Requests */}
-                    {req.status === "PENDING_APPROVAL" && (
-                      <div className="flex items-center justify-end gap-2 pt-1 border-t border-[#E6E3F7]">
-                        <button
-                          type="button"
-                          onClick={() => handleOpenUpdateRequestModal(req, "REJECT")}
-                          className="py-2 px-4 rounded-full bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                          <span>Tolak Pengajuan</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleOpenUpdateRequestModal(req, "APPROVE")}
-                          className="py-2 px-5 rounded-full bg-[#2DBA7D] hover:bg-[#259b67] text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
-                        >
-                          <Check className="w-3.5 h-3.5" />
-                          <span>Setujui &amp; Terapkan ke Stand</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* TAB 5: BAGI HASIL & BROADCAST MITRA (IDE TAMBAHAN)                        */}
-      {/* ========================================================================= */}
-      {activeTab === "SETTINGS" && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Card 1: Broadcast Pengumuman ke Seluruh Mitra Kantin */}
-          <div className="bg-white rounded-[22px] border border-[#E6E3F7] p-5 shadow-sm space-y-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-xs font-bold text-[#4A3AFF]">
-                <Send className="w-4 h-4" />
-                <span>Broadcast Pengumuman ke Mitra Stand</span>
-              </div>
-              <h3 className="text-base font-bold text-[#1C1B3A]">
-                Kirim Notifikasi Massal ke Semua Stand
-              </h3>
-              <p className="text-xs text-[#6F6B88]">
-                Kirimkan pengumuman operasional penting (misal: jadwal libur pabrik, maintenance listrik, atau jadwal kebersihan stand).
-              </p>
-            </div>
-
-            <form onSubmit={handleSendBroadcast} className="space-y-3 text-xs">
-              <div className="space-y-1">
-                <label className="font-bold text-[#1C1B3A]">Isi Pesan Pengumuman:</label>
-                <textarea
-                  rows={4}
-                  value={broadcastMessage}
-                  onChange={(e) => setBroadcastMessage(e.target.value)}
-                  placeholder="Contoh: Diberitahukan kepada seluruh pemilik stand kantin bahwa tanggal 17 September operasional pabrik libur nasional..."
-                  className="w-full bg-[#FAFAFC] border border-[#E6E3F7] rounded-[14px] p-3 text-xs focus:outline-none focus:border-[#4A3AFF]"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={!broadcastMessage.trim() || broadcastSent}
-                className="py-2.5 px-5 rounded-full bg-[#4A3AFF] hover:bg-[#3D2EE0] text-white font-bold text-xs flex items-center gap-2 shadow-xs cursor-pointer disabled:bg-gray-300"
-              >
-                <Send className="w-3.5 h-3.5" />
-                <span>Kirim Siaran ke {activeTenantsCount} Stand Aktif</span>
-              </button>
-            </form>
-          </div>
-
-          {/* Card 2: Pengaturan Bagi Hasil & Iuran Kas Koperasi */}
-          <div className="bg-white rounded-[22px] border border-[#E6E3F7] p-5 shadow-sm space-y-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-xs font-bold text-[#2DBA7D]">
-                <DollarSign className="w-4 h-4" />
-                <span>Pengaturan Iuran &amp; Bagi Hasil</span>
-              </div>
-              <h3 className="text-base font-bold text-[#1C1B3A]">
-                Iuran Kas Koperasi &amp; Kebersihan Stand
-              </h3>
-              <p className="text-xs text-[#6F6B88]">
-                Pengaturan potongan platform / iuran kebersihan yang otomatis disisihkan untuk kas Kopkar BIT.
-              </p>
-            </div>
-
-            <div className="space-y-3 text-xs">
-              <div className="p-3.5 rounded-[14px] bg-[#FAFAFC] border border-[#E6E3F7] flex items-center justify-between">
-                <div>
-                  <p className="font-bold text-[#1C1B3A]">Persentase Platform Fee / Iuran</p>
-                  <p className="text-[10.5px] text-[#6F6B88]">Dipotong dari omzet kotor saat settlement</p>
-                </div>
-                <span className="font-extrabold text-sm text-[#4A3AFF] bg-[#F5F3FF] px-3 py-1 rounded-full border border-[#E6E3F7]">
-                  1.0 %
-                </span>
-              </div>
-
-              <div className="p-3.5 rounded-[14px] bg-[#FAFAFC] border border-[#E6E3F7] flex items-center justify-between">
-                <div>
-                  <p className="font-bold text-[#1C1B3A]">Siklus Cutoff Pemotongan Gaji</p>
-                  <p className="text-[10.5px] text-[#6F6B88]">Sinkron dengan sistem payroll HRD BIT</p>
-                </div>
-                <span className="font-bold text-xs text-[#2DBA7D] bg-[#E6F9F0] px-3 py-1 rounded-full border border-[#A7F3D0]">
-                  Tgl 25 / Bulan
-                </span>
-              </div>
-
-              <div className="p-3.5 rounded-[14px] bg-[#FAFAFC] border border-[#E6E3F7] flex items-center justify-between">
-                <div>
-                  <p className="font-bold text-[#1C1B3A]">Limit Transaksi Kasir POS Tanpa PIN</p>
-                  <p className="text-[10.5px] text-[#6F6B88]">Untuk kenyamanan jam makan siang cepat</p>
-                </div>
-                <span className="font-bold text-xs text-[#1C1B3A]">
-                  Rp 100.000 / Transaksi
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* ACTION MODAL (APPROVE / REJECT / SUSPEND / REACTIVATE / DELETE)           */}
-      {/* ========================================================================= */}
-      {actionType && selectedTenantForAction && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-white rounded-[22px] border border-[#E6E3F7] shadow-2xl w-full max-w-md p-6 space-y-4">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-[#E6E3F7] pb-3">
-              <div className="flex items-center gap-2">
-                {actionType === "APPROVE" && <CheckCircle2 className="w-5 h-5 text-[#2DBA7D]" />}
-                {actionType === "REJECT" && <X className="w-5 h-5 text-red-500" />}
-                {actionType === "SUSPEND" && <Ban className="w-5 h-5 text-red-500" />}
-                {actionType === "REACTIVATE" && <RefreshCw className="w-5 h-5 text-[#4A3AFF]" />}
-                {actionType === "DELETE" && <Trash2 className="w-5 h-5 text-red-500" />}
-                <h3 className="text-sm font-bold text-[#1C1B3A]">
-                  {actionType === "APPROVE" && "Setujui Pendaftaran Stand Kantin"}
-                  {actionType === "REJECT" && "Tolak Pendaftaran Stand Kantin"}
-                  {actionType === "SUSPEND" && "Bekukan Akun Stand Kantin"}
-                  {actionType === "REACTIVATE" && "Aktifkan Kembali Akun Stand"}
-                  {actionType === "DELETE" && "Hapus Data Stand Kantin"}
-                </h3>
-              </div>
-              <button
-                onClick={() => setActionType(null)}
-                className="w-7 h-7 rounded-full hover:bg-[#F5F3FF] text-[#6F6B88] flex items-center justify-center cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Target Tenant Info */}
-            <div className="p-3 rounded-[14px] bg-[#F5F3FF] border border-[#E6E3F7] space-y-1 text-xs">
-              <p className="font-bold text-[#1C1B3A]">{selectedTenantForAction.name}</p>
-              <p className="text-[11px] text-[#6F6B88]">
-                Pemilik: <strong>{selectedTenantForAction.ownerName}</strong> ({selectedTenantForAction.phone})
-              </p>
-              <p className="text-[11px] text-[#6F6B88]">
-                Lokasi: {selectedTenantForAction.location} • Rekening: {selectedTenantForAction.bankName}{" "}
-                {selectedTenantForAction.bankAccountNumber}
-              </p>
-            </div>
-
-            {/* Confirmation Text / Note input */}
-            <div className="space-y-2 text-xs">
-              {actionType === "APPROVE" && (
-                <p className="text-[#6F6B88]">
-                  Setelah disetujui, pemilik stand dapat langsung login dengan username <strong>{selectedTenantForAction.username}</strong> untuk mulai melayani kasir POS dan mengunggah menu makanan.
-                </p>
-              )}
-              {actionType === "SUSPEND" && (
-                <div className="space-y-1">
-                  <label className="font-bold text-[#1C1B3A]">Alasan Pembekuan Stand:</label>
-                  <input
-                    type="text"
-                    value={actionNote}
-                    onChange={(e) => setActionNote(e.target.value)}
-                    placeholder="Contoh: Evaluasi kebersihan stand / evaluasi jam buka"
-                    className="w-full bg-[#FAFAFC] border border-[#E6E3F7] rounded-[10px] p-2 text-xs"
-                  />
-                </div>
-              )}
-              {actionType === "DELETE" && (
-                <p className="text-red-600 font-semibold">
-                  Peringatan: Tindakan ini akan menghapus seluruh data stand dan produk terkait dari sistem koperasi.
-                </p>
-              )}
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setActionType(null)}
-                className="flex-1 py-2.5 rounded-full bg-white border border-[#E6E3F7] text-[#6F6B88] font-bold text-xs cursor-pointer"
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={handleExecuteTenantAction}
-                className={`flex-1 py-2.5 rounded-full text-white font-bold text-xs cursor-pointer ${
-                  actionType === "APPROVE"
-                    ? "bg-[#2DBA7D] hover:bg-[#259b67]"
-                    : actionType === "REACTIVATE"
-                    ? "bg-[#4A3AFF] hover:bg-[#3D2EE0]"
-                    : "bg-red-600 hover:bg-red-700"
-                }`}
-              >
-                {actionType === "APPROVE" && "Ya, Setujui Stand"}
-                {actionType === "REJECT" && "Ya, Tolak Pengajuan"}
-                {actionType === "SUSPEND" && "Ya, Bekukan Akun"}
-                {actionType === "REACTIVATE" && "Ya, Aktifkan Kembali"}
-                {actionType === "DELETE" && "Hapus Permanen"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* UPDATE REQUEST ACTION MODAL (APPROVE / REJECT)                            */}
-      {/* ========================================================================= */}
-      {updateActionType && selectedUpdateRequestForAction && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-white rounded-[22px] border border-[#E6E3F7] shadow-2xl w-full max-w-md p-6 space-y-4">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-[#E6E3F7] pb-3">
-              <div className="flex items-center gap-2">
-                {updateActionType === "APPROVE" ? (
-                  <CheckCircle2 className="w-5 h-5 text-[#2DBA7D]" />
-                ) : (
-                  <X className="w-5 h-5 text-red-500" />
-                )}
-                <h3 className="text-sm font-bold text-[#1C1B3A]">
-                  {updateActionType === "APPROVE"
-                    ? "Setujui Perubahan Data Stand"
-                    : "Tolak Pengajuan Perubahan Data"}
-                </h3>
-              </div>
-              <button
-                onClick={() => {
-                  setUpdateActionType(null);
-                  setSelectedUpdateRequestForAction(null);
-                }}
-                className="w-7 h-7 rounded-full hover:bg-[#F5F3FF] text-[#6F6B88] flex items-center justify-center cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Target Tenant Info */}
-            <div className="p-3 rounded-[14px] bg-[#F5F3FF] border border-[#E6E3F7] space-y-1 text-xs">
-              <p className="font-bold text-[#1C1B3A]">
-                {selectedUpdateRequestForAction.tenantName} ({selectedUpdateRequestForAction.tenantId})
-              </p>
-              <p className="text-[11px] text-[#6F6B88]">
-                Alasan pengajuan: <em>&ldquo;{selectedUpdateRequestForAction.reason}&rdquo;</em>
-              </p>
-            </div>
-
-            {/* Explanatory Text */}
-            <div className="text-xs text-[#6F6B88]">
-              {updateActionType === "APPROVE" ? (
-                <p>
-                  Dengan menyetujui, data stand dan nomor rekening pencairan akan <strong>otomatis diperbarui</strong> pada sistem koperasi dan seluruh jadwal settlement berikutnya.
-                </p>
-              ) : (
-                <p>
-                  Pengajuan akan ditolak dan stand mitra akan menerima catatan penolakan.
-                </p>
-              )}
-            </div>
-
-            {/* Optional Note */}
-            <div className="space-y-1 text-xs">
-              <label className="font-bold text-[#1C1B3A]">Catatan Admin (Opsional):</label>
-              <input
-                type="text"
-                value={updateActionNote}
-                onChange={(e) => setUpdateActionNote(e.target.value)}
-                placeholder={
-                  updateActionType === "APPROVE"
-                    ? "Contoh: Dokumen rekening bank telah diverifikasi"
-                    : "Contoh: Foto buku tabungan tidak jelas / nama pemilik berbeda"
-                }
-                className="w-full bg-[#FAFAFC] border border-[#E6E3F7] rounded-[10px] p-2 text-xs focus:outline-none focus:border-[#4A3AFF]"
+          <form onSubmit={handleSendBroadcast} className="space-y-4 text-xs">
+            <div className="space-y-1.5">
+              <label className="font-bold text-[#1C1B3A]">Isi Pesan Pengumuman:</label>
+              <textarea
+                rows={5}
+                value={broadcastMessage}
+                onChange={(e) => setBroadcastMessage(e.target.value)}
+                placeholder="Contoh: Diberitahukan kepada kasir kantin bahwa menu makan siang hari ini dilengkapi Nasi Kuning Spesial & Soto Ayam Lamongan..."
+                className="w-full bg-[#FAFAFC] border border-[#E6E3F7] rounded-[16px] p-3.5 text-xs text-[#1C1B3A] focus:outline-none focus:border-[#4A3AFF]"
               />
             </div>
 
-            {/* Buttons */}
-            <div className="flex gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setUpdateActionType(null);
-                  setSelectedUpdateRequestForAction(null);
-                }}
-                className="flex-1 py-2.5 rounded-full bg-white border border-[#E6E3F7] text-[#6F6B88] font-bold text-xs cursor-pointer"
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={handleExecuteUpdateRequestAction}
-                className={`flex-1 py-2.5 rounded-full text-white font-bold text-xs cursor-pointer ${
-                  updateActionType === "APPROVE"
-                    ? "bg-[#2DBA7D] hover:bg-[#259b67]"
-                    : "bg-red-600 hover:bg-red-700"
-                }`}
-              >
-                {updateActionType === "APPROVE" ? "Ya, Terapkan Perubahan" : "Ya, Tolak Pengajuan"}
-              </button>
-            </div>
-          </div>
+            <button
+              type="submit"
+              disabled={!broadcastMessage.trim() || broadcastSent}
+              className="py-3 px-6 rounded-full bg-[#4A3AFF] hover:bg-[#3D2EE0] text-white font-bold text-xs flex items-center gap-2 shadow-md shadow-[#4A3AFF]/20 cursor-pointer disabled:bg-gray-300 transition-all"
+            >
+              <Send className="w-4 h-4" />
+              <span>{broadcastSent ? "Pesan Terkirim!" : "Kirim Siaran ke Kasir Kantin"}</span>
+            </button>
+          </form>
         </div>
       )}
     </div>

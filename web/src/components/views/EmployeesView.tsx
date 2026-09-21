@@ -13,15 +13,38 @@ import {
   Info,
   Building2,
   Briefcase,
+  FileSpreadsheet,
+  Printer,
 } from "lucide-react";
 import { sampleEmployees, calculateDynamicLoanLimit } from "@/data/mockData";
 import { EmployeeMember, PositionLevel } from "@/types";
 import { useDebounce } from "@/hooks/useDebounce";
+import {
+  exportToCsv,
+  buildEmployeesReportConfig,
+  ReportConfig,
+} from "@/utils/reportExporter";
+import { ReportExportModal } from "@/components/common/ReportExportModal";
 
 export const EmployeesView: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDept, setSelectedDept] = useState("ALL");
   const [selectedPosition, setSelectedPosition] = useState<string>("ALL");
+
+  // Report Export State
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [currentExportConfig, setCurrentExportConfig] = useState<ReportConfig | null>(null);
+
+  const handleOpenExportModal = () => {
+    const config = buildEmployeesReportConfig(filteredEmployees);
+    setCurrentExportConfig(config);
+    setIsExportModalOpen(true);
+  };
+
+  const handleDirectCsvExport = () => {
+    const config = buildEmployeesReportConfig(filteredEmployees);
+    exportToCsv(config);
+  };
 
   const debouncedSearch = useDebounce(searchTerm, 300);
 
@@ -63,11 +86,23 @@ export const EmployeesView: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="text-right hidden sm:block">
-            <p className="text-xs text-[#6F6B88]">Status Anggota Kopkar BIT</p>
-            <p className="text-lg font-bold text-[#4A3AFF]">Semua Karyawan Terdaftar</p>
-          </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={handleDirectCsvExport}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full border border-[#2DBA7D]/30 bg-[#E6F9F0] text-[#2DBA7D] hover:bg-[#2DBA7D] hover:text-white text-xs font-bold transition-colors cursor-pointer"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            <span>Export Excel</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleOpenExportModal}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#4A3AFF] hover:bg-[#6B5CEB] text-white text-xs font-bold transition-colors shadow-sm cursor-pointer"
+          >
+            <Printer className="w-4 h-4" />
+            <span>Cetak Buku Induk Anggota</span>
+          </button>
         </div>
       </div>
 
@@ -258,6 +293,15 @@ export const EmployeesView: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* Formal Cooperative Report Export Modal */}
+      {isExportModalOpen && currentExportConfig && (
+        <ReportExportModal
+          isOpen={isExportModalOpen}
+          onClose={() => setIsExportModalOpen(false)}
+          config={currentExportConfig}
+        />
+      )}
     </div>
   );
 };

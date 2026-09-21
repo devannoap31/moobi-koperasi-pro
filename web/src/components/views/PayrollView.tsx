@@ -15,12 +15,20 @@ import {
 import { samplePayrollDeductions } from "@/data/mockData";
 import { PayrollDeductionRecord } from "@/types";
 import { useDebounce } from "@/hooks/useDebounce";
+import {
+  FormalReportConfig,
+  buildPayrollReportConfig,
+  exportToCsv,
+} from "@/utils/reportExporter";
+import { ReportExportModal } from "@/components/common/ReportExportModal";
 
 export const PayrollView: React.FC = () => {
   const [deductions, setDeductions] = useState<PayrollDeductionRecord[]>(samplePayrollDeductions);
   const [selectedPeriod, setSelectedPeriod] = useState("September 2026");
   const [searchTerm, setSearchTerm] = useState("");
   const [exportNotice, setExportNotice] = useState<string | null>(null);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportConfig, setReportConfig] = useState<FormalReportConfig | null>(null);
 
   const debouncedSearch = useDebounce(searchTerm, 300);
 
@@ -37,13 +45,35 @@ export const PayrollView: React.FC = () => {
   const totalAllDeductions = filtered.reduce((acc, d) => acc + d.totalDeductions, 0);
   const totalTakeHomePay = filtered.reduce((acc, d) => acc + d.netTakeHomePay, 0);
 
-  const handleExport = (format: "EXCEL" | "PDF") => {
-    setExportNotice(`Berhasil mengekspor Laporan Rekap Potong Gaji (${format}) untuk Tim HRD & Finance PT. Bhakti Idola Tama Periode ${selectedPeriod}!`);
+  const handleExportExcel = () => {
+    const config = buildPayrollReportConfig(filtered, selectedPeriod);
+    exportToCsv({
+      filename: `Rekap-Payroll-Kopkar-BIT-${selectedPeriod.replace(/\s+/g, "-")}`,
+      columns: config.columns,
+      data: config.data,
+      totalRow: config.totalRow,
+      reportTitle: config.title,
+      period: config.period,
+    });
+    setExportNotice(`Berhasil mengunduh Laporan Rekap Payroll (${selectedPeriod}) format Excel (.csv)!`);
     setTimeout(() => setExportNotice(null), 4000);
+  };
+
+  const handleOpenPdfModal = () => {
+    const config = buildPayrollReportConfig(filtered, selectedPeriod);
+    setReportConfig(config);
+    setIsReportModalOpen(true);
   };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
+      {/* Report Export Preview Modal */}
+      <ReportExportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        config={reportConfig}
+      />
+
       {/* 1. Header Banner */}
       <div className="bg-white p-6 rounded-[18px] border border-[#E6E3F7] shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -62,18 +92,18 @@ export const PayrollView: React.FC = () => {
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => handleExport("EXCEL")}
+            onClick={handleExportExcel}
             className="px-4 py-2 rounded-full bg-[#2DBA7D] hover:bg-[#239962] text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
           >
             <FileSpreadsheet className="w-4 h-4" />
             <span>Export Excel (HRD BIT)</span>
           </button>
           <button
-            onClick={() => handleExport("PDF")}
-            className="px-4 py-2 rounded-full bg-[#4A3AFF] hover:bg-[#6B5CEB] text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+            onClick={handleOpenPdfModal}
+            className="px-4 py-2 rounded-full bg-[#4A3AFF] hover:bg-[#3D2EE0] text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
           >
             <FileText className="w-4 h-4" />
-            <span>Export PDF Slip</span>
+            <span>Cetak / Export PDF Laporan</span>
           </button>
         </div>
       </div>

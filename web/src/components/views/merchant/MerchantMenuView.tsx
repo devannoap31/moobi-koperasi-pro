@@ -44,16 +44,15 @@ export const MerchantMenuView: React.FC = () => {
   });
 
   const categories: { id: string; label: string }[] = [
-    { id: "ALL", label: "Semua Kategori" },
-    { id: "MAKANAN", label: "Makanan Kantin" },
-    { id: "MINUMAN", label: "Minuman" },
-    { id: "ELEKTRONIK_BIT", label: "Elektronik & Perkakas BIT" },
-    { id: "ALAT_KERJA", label: "Alat Kerja & Safety" },
-    { id: "KEBUTUHAN_HARIAN", label: "Cookware & Harian" },
+    { id: "ALL", label: "Semua Menu Kantin" },
+    { id: "MAKANAN", label: "Makanan Siap Saji" },
+    { id: "MINUMAN", label: "Minuman & Kopi" },
   ];
 
-  // Filter Products
+  // Filter Products (Strictly Makanan & Minuman for Factory Canteen)
   const filteredProducts = products.filter((p) => {
+    const isFoodOrBeverage = p.category === "MAKANAN" || p.category === "MINUMAN";
+    if (!isFoodOrBeverage) return false;
     const matchCategory = selectedCategory === "ALL" || p.category === selectedCategory;
     const matchSearch =
       !debouncedSearch.trim() ||

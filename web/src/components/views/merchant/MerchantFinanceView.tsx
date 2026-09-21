@@ -31,6 +31,13 @@ import {
 } from "lucide-react";
 import { useMerchant } from "@/context/MerchantContext";
 import { CanteenPaymentMethod } from "@/types";
+import { useDebounce } from "@/hooks/useDebounce";
+import {
+  FormalReportConfig,
+  buildMerchantFinanceReportConfig,
+  exportToCsv,
+} from "@/utils/reportExporter";
+import { ReportExportModal } from "@/components/common/ReportExportModal";
 
 interface LedgerTransaction {
   id: string;
@@ -53,13 +60,18 @@ export const MerchantFinanceView: React.FC = () => {
   const [showQrisPreviewModal, setShowQrisPreviewModal] = useState(false);
   const [showPrintReportModal, setShowPrintReportModal] = useState(false);
 
-  // Filters for Ledger
-  const [searchLedger, setSearchLedger] = useState("");
-  const [dateFilter, setDateFilter] = useState<"ALL" | "TODAY" | "7_DAYS" | "THIS_MONTH">("ALL");
-  const [paymentFilter, setPaymentFilter] = useState<string>("ALL");
+  const [selectedMonth, setSelectedMonth] = useState("2026-09");
+  const [paymentFilter, setPaymentFilter] = useState("ALL");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [dateFilter, setDateFilter] = useState<"ALL" | "TODAY" | "7_DAYS">("ALL");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportConfig, setReportConfig] = useState<FormalReportConfig | null>(null);
 
-  // Mock Ledger Transactions (Combined from actual orders & typical shifts)
-  const initialLedger: LedgerTransaction[] = useMemo(() => {
+  const debouncedSearch = useDebounce(searchTerm, 300);
+
+  // Mock Ledger Data
+  const sampleTransactions: LedgerTransaction[] = useMemo(() => {
     return [
       {
         id: "TX-01",
@@ -73,8 +85,8 @@ export const MerchantFinanceView: React.FC = () => {
         department: "Logistik & Warehouse",
         itemsSummary: "2x Ayam Geprek, 1x Es Teh Manis",
         totalAmount: 38000,
-        paymentMethod: "POTONG_GAJI",
-        disbursementStatus: "MENUNGGU_CUTOFF",
+        paymentMethod: "QRIS_TUNAI",
+        disbursementStatus: "DITERIMA_LANGSUNG",
       },
       {
         id: "TX-02",
@@ -88,8 +100,8 @@ export const MerchantFinanceView: React.FC = () => {
         department: "Technical Service & QC",
         itemsSummary: "1x Nasi Goreng Spesial, 1x Kopi Hitam",
         totalAmount: 22000,
-        paymentMethod: "SALDO_KOPERASI",
-        disbursementStatus: "MENUNGGU_CUTOFF",
+        paymentMethod: "CASH_TUNAI",
+        disbursementStatus: "DITERIMA_LANGSUNG",
       },
       {
         id: "TX-03",
@@ -131,8 +143,8 @@ export const MerchantFinanceView: React.FC = () => {
         department: "Sales & Distribusi",
         itemsSummary: "3x Nasi Goreng Spesial, 3x Es Jeruk",
         totalAmount: 69000,
-        paymentMethod: "POTONG_GAJI",
-        disbursementStatus: "MENUNGGU_CUTOFF",
+        paymentMethod: "QRIS_TUNAI",
+        disbursementStatus: "DITERIMA_LANGSUNG",
       },
       {
         id: "TX-06",
@@ -146,8 +158,8 @@ export const MerchantFinanceView: React.FC = () => {
         department: "HR & General Affairs",
         itemsSummary: "1x Soto Ayam Lamongan, 1x Es Teh",
         totalAmount: 20000,
-        paymentMethod: "POTONG_GAJI",
-        disbursementStatus: "MENUNGGU_CUTOFF",
+        paymentMethod: "CASH_TUNAI",
+        disbursementStatus: "DITERIMA_LANGSUNG",
       },
       {
         id: "TX-07",
@@ -161,8 +173,8 @@ export const MerchantFinanceView: React.FC = () => {
         department: "Logistik & Warehouse",
         itemsSummary: "2x Ayam Geprek Sambal Korek",
         totalAmount: 30000,
-        paymentMethod: "SALDO_KOPERASI",
-        disbursementStatus: "MENUNGGU_CUTOFF",
+        paymentMethod: "QRIS_TUNAI",
+        disbursementStatus: "DITERIMA_LANGSUNG",
       },
       {
         id: "TX-08",
@@ -202,50 +214,40 @@ export const MerchantFinanceView: React.FC = () => {
 
   // Revenue Breakdown Calculations
   const revenueBreakdown = {
-    potongGaji: { amount: 2450000, percent: 58, label: "Potong Gaji Payroll" },
-    saldoKoperasi: { amount: 1150000, percent: 27, label: "Saldo Dompet Kopkar" },
-    qris: { amount: 450000, percent: 11, label: "QRIS Stand Mandiri" },
-    cash: { amount: 180000, percent: 4, label: "Cash / Tunai Kasir" },
+    qris: { amount: 2850000, percent: 65, label: "QRIS Statis Stand" },
+    cash: { amount: 1550000, percent: 35, label: "Cash / Tunai Kasir" },
   };
 
   // Filtered Ledger
-  const filteredLedger = initialLedger.filter((tx) => {
-    const matchSearch =
-      tx.customerName.toLowerCase().includes(searchLedger.toLowerCase()) ||
-      tx.orderNumber.toLowerCase().includes(searchLedger.toLowerCase()) ||
-      tx.itemsSummary.toLowerCase().includes(searchLedger.toLowerCase()) ||
-      (tx.customerNik && tx.customerNik.toLowerCase().includes(searchLedger.toLowerCase()));
-
+  const filteredLedger = sampleTransactions.filter((tx) => {
     const matchPayment = paymentFilter === "ALL" || tx.paymentMethod === paymentFilter;
-
-    let matchDate = true;
-    if (dateFilter === "TODAY") {
-      matchDate = tx.dateOnly === "2026-09-16";
-    } else if (dateFilter === "7_DAYS") {
-      matchDate = true; // All mock items are in 7 days
-    }
-
-    return matchSearch && matchPayment && matchDate;
+    const matchStatus = statusFilter === "ALL" || tx.disbursementStatus === statusFilter;
+    const matchSearch =
+      !debouncedSearch.trim() ||
+      tx.customerName.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+      tx.orderNumber.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+      (tx.customerNik && tx.customerNik.toLowerCase().includes(debouncedSearch.toLowerCase())) ||
+      tx.itemsSummary.toLowerCase().includes(debouncedSearch.toLowerCase());
+    return matchPayment && matchStatus && matchSearch;
   });
 
-  // Export CSV Handler
+  // Export handlers
   const handleExportCSV = () => {
-    const headers = "No. Order,Tanggal & Jam,Nama Pembeli,Tipe,NIK/Dept,Menu Terjual,Metode Pembayaran,Nominal,Status Dana\n";
-    const rows = filteredLedger
-      .map(
-        (tx) =>
-          `"${tx.orderNumber}","${tx.timestamp}","${tx.customerName}","${tx.customerType}","${tx.customerNik || "-"} / ${tx.department || "-"}","${tx.itemsSummary}","${tx.paymentMethod}",${tx.totalAmount},"${tx.disbursementStatus}"`
-      )
-      .join("\n");
+    const config = buildMerchantFinanceReportConfig(filteredLedger, revenueBreakdown, "September 2026", currentTenant);
+    exportToCsv({
+      filename: `Rekap-Omzet-${currentTenant.id}-September-2026`,
+      columns: config.columns,
+      data: config.data,
+      totalRow: config.totalRow,
+      reportTitle: config.title,
+      period: config.period,
+    });
+  };
 
-    const blob = new Blob([headers + rows], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `rekap-omzet-${currentTenant.id}-september-2026.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleOpenReportModal = () => {
+    const config = buildMerchantFinanceReportConfig(filteredLedger, revenueBreakdown, "September 2026", currentTenant);
+    setReportConfig(config);
+    setIsReportModalOpen(true);
   };
 
   // Cutoff calculation
@@ -255,6 +257,13 @@ export const MerchantFinanceView: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-16">
+      {/* Formal Report Export Modal */}
+      <ReportExportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        config={reportConfig}
+      />
+
       {/* 1. Header & Actions */}
       <div className="bg-white p-6 rounded-[22px] border border-[#E6E3F7] shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -282,15 +291,15 @@ export const MerchantFinanceView: React.FC = () => {
             className="px-3.5 py-2 rounded-full border border-[#E6E3F7] bg-[#FAFAFC] hover:bg-white text-xs font-bold text-[#1C1B3A] transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
           >
             <FileSpreadsheet className="w-3.5 h-3.5 text-[#2DBA7D]" />
-            <span>Ekspor CSV</span>
+            <span>Ekspor CSV / Excel</span>
           </button>
           <button
             type="button"
-            onClick={() => setShowPrintReportModal(true)}
-            className="px-4 py-2 rounded-full bg-[#4A3AFF] hover:bg-[#6B5CEB] text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+            onClick={handleOpenReportModal}
+            className="px-4 py-2 rounded-full bg-[#4A3AFF] hover:bg-[#3D2EE0] text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
           >
             <Printer className="w-3.5 h-3.5" />
-            <span>Cetak Rekap Laporan</span>
+            <span>Cetak Rekap Laporan Resmi (PDF)</span>
           </button>
         </div>
       </div>
@@ -382,51 +391,17 @@ export const MerchantFinanceView: React.FC = () => {
             </p>
           </div>
           <span className="text-xs font-bold text-[#4A3AFF] bg-[#F5F3FF] px-3 py-1 rounded-full border border-[#E6E3F7]">
-            Bulan Ini: Rp {(revenueBreakdown.potongGaji.amount + revenueBreakdown.saldoKoperasi.amount + revenueBreakdown.qris.amount + revenueBreakdown.cash.amount).toLocaleString("id-ID")}
+            Bulan Ini: Rp {(revenueBreakdown.qris.amount + revenueBreakdown.cash.amount).toLocaleString("id-ID")}
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Potong Gaji */}
-          <div className="p-4 rounded-[16px] bg-[#FAFAFC] border border-[#E6E3F7] space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <CreditCard className="w-4 h-4 text-[#4A3AFF]" />
-                <span className="text-xs font-bold text-[#1C1B3A]">Potong Gaji Payroll</span>
-              </div>
-              <span className="text-[10px] font-bold text-[#4A3AFF]">{revenueBreakdown.potongGaji.percent}%</span>
-            </div>
-            <p className="text-lg font-bold text-[#1C1B3A]">
-              Rp {revenueBreakdown.potongGaji.amount.toLocaleString("id-ID")}
-            </p>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FFF4E5] text-[#D97706] inline-block">
-              Tertahan di Koperasi (Cair tgl 25)
-            </span>
-          </div>
-
-          {/* Saldo Koperasi */}
-          <div className="p-4 rounded-[16px] bg-[#FAFAFC] border border-[#E6E3F7] space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <Wallet className="w-4 h-4 text-[#7C3AED]" />
-                <span className="text-xs font-bold text-[#1C1B3A]">Saldo Dompet Kopkar</span>
-              </div>
-              <span className="text-[10px] font-bold text-[#7C3AED]">{revenueBreakdown.saldoKoperasi.percent}%</span>
-            </div>
-            <p className="text-lg font-bold text-[#1C1B3A]">
-              Rp {revenueBreakdown.saldoKoperasi.amount.toLocaleString("id-ID")}
-            </p>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FFF4E5] text-[#D97706] inline-block">
-              Tertahan di Koperasi (Cair tgl 25)
-            </span>
-          </div>
-
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* QRIS Stand */}
           <div className="p-4 rounded-[16px] bg-[#FAFAFC] border border-[#E6E3F7] space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
                 <QrCode className="w-4 h-4 text-[#2DBA7D]" />
-                <span className="text-xs font-bold text-[#1C1B3A]">QRIS Stand Rekening</span>
+                <span className="text-xs font-bold text-[#1C1B3A]">QRIS Statis Stand Mandiri</span>
               </div>
               <span className="text-[10px] font-bold text-[#2DBA7D]">{revenueBreakdown.qris.percent}%</span>
             </div>
@@ -443,7 +418,7 @@ export const MerchantFinanceView: React.FC = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
                 <Banknote className="w-4 h-4 text-[#0284C7]" />
-                <span className="text-xs font-bold text-[#1C1B3A]">Cash / Tunai Kasir</span>
+                <span className="text-xs font-bold text-[#1C1B3A]">Cash / Uang Tunai Kasir</span>
               </div>
               <span className="text-[10px] font-bold text-[#0284C7]">{revenueBreakdown.cash.percent}%</span>
             </div>
@@ -612,8 +587,8 @@ export const MerchantFinanceView: React.FC = () => {
               <input
                 type="text"
                 placeholder="Cari pembeli / order..."
-                value={searchLedger}
-                onChange={(e) => setSearchLedger(e.target.value)}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-8 pr-3 py-1.5 bg-[#FAFAFC] border border-[#E6E3F7] rounded-full text-xs text-[#1C1B3A] focus:outline-none focus:border-[#4A3AFF]"
               />
             </div>
@@ -636,10 +611,8 @@ export const MerchantFinanceView: React.FC = () => {
               className="bg-[#FAFAFC] border border-[#E6E3F7] rounded-full px-3 py-1.5 text-xs text-[#1C1B3A] font-semibold focus:outline-none focus:border-[#4A3AFF]"
             >
               <option value="ALL">Semua Metode</option>
-              <option value="POTONG_GAJI">Potong Gaji</option>
-              <option value="SALDO_KOPERASI">Saldo Kopkar</option>
-              <option value="QRIS_TUNAI">QRIS</option>
-              <option value="CASH_TUNAI">Cash</option>
+              <option value="CASH_TUNAI">Uang Tunai (Cash)</option>
+              <option value="QRIS_TUNAI">QRIS Statis Stand</option>
             </select>
           </div>
         </div>
@@ -678,22 +651,14 @@ export const MerchantFinanceView: React.FC = () => {
                   <td className="py-3 px-3">
                     <span
                       className={`text-[10px] font-bold px-2 py-0.5 rounded-full inline-block ${
-                        tx.paymentMethod === "POTONG_GAJI"
-                          ? "bg-[#F5F3FF] text-[#4A3AFF] border border-[#E6E3F7]"
-                          : tx.paymentMethod === "SALDO_KOPERASI"
-                          ? "bg-[#EDE9FE] text-[#7C3AED]"
-                          : tx.paymentMethod === "QRIS_TUNAI"
+                        tx.paymentMethod === "QRIS_TUNAI"
                           ? "bg-[#E6F9F0] text-[#2DBA7D]"
                           : "bg-[#E0F2FE] text-[#0284C7]"
                       }`}
                     >
-                      {tx.paymentMethod === "POTONG_GAJI"
-                        ? "Potong Gaji"
-                        : tx.paymentMethod === "SALDO_KOPERASI"
-                        ? "Saldo Kopkar"
-                        : tx.paymentMethod === "QRIS_TUNAI"
-                        ? "QRIS Mandiri"
-                        : "Cash Tunai"}
+                      {tx.paymentMethod === "QRIS_TUNAI"
+                        ? "QRIS Statis Stand"
+                        : "Uang Tunai (Cash)"}
                     </span>
                   </td>
                   <td className="py-3 px-3 font-bold text-[#1C1B3A]">
@@ -871,25 +836,17 @@ export const MerchantFinanceView: React.FC = () => {
                   Rincian Penerimaan Omzet
                 </span>
                 <div className="flex justify-between">
-                  <span>1. Omzet Potong Gaji (Payroll BIT):</span>
-                  <span className="font-bold">Rp {revenueBreakdown.potongGaji.amount.toLocaleString("id-ID")}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>2. Omzet Saldo Dompet Koperasi:</span>
-                  <span className="font-bold">Rp {revenueBreakdown.saldoKoperasi.amount.toLocaleString("id-ID")}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>3. Omzet QRIS Stand Mandiri:</span>
+                  <span>1. Omzet QRIS Statis Stand Mandiri:</span>
                   <span className="font-bold">Rp {revenueBreakdown.qris.amount.toLocaleString("id-ID")}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>4. Omzet Cash / Tunai Kasir:</span>
+                  <span>2. Omzet Cash / Tunai Kasir:</span>
                   <span className="font-bold">Rp {revenueBreakdown.cash.amount.toLocaleString("id-ID")}</span>
                 </div>
                 <div className="border-t border-dashed border-[#E6E3F7] pt-2 flex justify-between font-bold text-sm">
                   <span>Total Omzet Keseluruhan:</span>
                   <span className="text-[#4A3AFF]">
-                    Rp {(revenueBreakdown.potongGaji.amount + revenueBreakdown.saldoKoperasi.amount + revenueBreakdown.qris.amount + revenueBreakdown.cash.amount).toLocaleString("id-ID")}
+                    Rp {(revenueBreakdown.qris.amount + revenueBreakdown.cash.amount).toLocaleString("id-ID")}
                   </span>
                 </div>
               </div>

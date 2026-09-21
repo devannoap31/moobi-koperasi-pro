@@ -183,11 +183,9 @@ export const MerchantOrdersView: React.FC = () => {
                 {/* Total & Payment Method */}
                 <div className="flex items-center justify-between text-xs pt-1">
                   <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#F5F3FF] text-[#4A3AFF]">
-                    {ord.paymentMethod === "POTONG_GAJI"
-                      ? "Auto Payroll"
-                      : ord.paymentMethod === "SALDO_KOPERASI"
-                      ? "Saldo Koperasi"
-                      : "QRIS Stand"}
+                    {ord.paymentMethod === "QRIS_TUNAI"
+                      ? "QRIS Statis Stand"
+                      : "Uang Tunai (Cash)"}
                   </span>
                   <div className="text-right">
                     <span className="text-[10px] text-[#6F6B88] block">Total Bayar:</span>

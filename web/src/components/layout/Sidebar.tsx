@@ -16,6 +16,8 @@ import {
   X,
   LogOut,
   Store,
+  ShoppingBag,
+  UtensilsCrossed,
 } from "lucide-react";
 import { useSidebar } from "@/context/SidebarContext";
 
@@ -105,11 +107,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       href: "/canteen",
-      label: "Kelola Mitra Kantin",
-      category: "Multi-Tenant & Arus Kas",
-      icon: Store,
-      badgeCount: pendingCanteenRequestsCount,
+      label: "Kantin Pabrik BIT",
+      category: "Makanan & Minuman F&B",
+      icon: UtensilsCrossed,
+      badgeCount: 0,
       isActive: pathname.startsWith("/canteen"),
+    },
+    {
+      href: "/store",
+      label: "Toko & Barang Elektronik",
+      category: "Katalog & Cicilan Payroll",
+      icon: ShoppingBag,
+      badgeCount: 0,
+      isActive: pathname.startsWith("/store"),
     },
     {
       href: "/payroll",

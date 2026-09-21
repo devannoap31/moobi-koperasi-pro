@@ -63,7 +63,7 @@ export default function RootLandingPage() {
           <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#F5F3FF] border border-[#E6E3F7] text-xs">
             <div className="w-2 h-2 rounded-full bg-[#2DBA7D] animate-pulse" />
             <span className="text-[#6F6B88]">Sistem Aktif:</span>
-            <span className="font-bold text-[#1C1B3A]">Koperasi &amp; Multi-Tenant Kantin</span>
+            <span className="font-bold text-[#1C1B3A]">Koperasi &amp; Kantin Utama Pabrik BIT</span>
           </div>
         </div>
       </header>
@@ -111,7 +111,7 @@ export default function RootLandingPage() {
                   Portal Manajemen Koperasi
                 </h2>
                 <p className="text-xs text-[#6F6B88] leading-relaxed">
-                  Pusat administrasi internal untuk mengelola simpan pinjam anggota, data karyawan, monitoring transaksi multi-kantin, integrasi payroll HRD, dan bank channeling.
+                  Pusat administrasi internal untuk mengelola simpan pinjam anggota (DSR 30%), data karyawan, monitoring operasional kantin pabrik, integrasi payroll HRD, dan bank channeling.
                 </p>
               </div>
 
@@ -119,11 +119,11 @@ export default function RootLandingPage() {
               <div className="space-y-2 pt-2 border-t border-[#E6E3F7]">
                 <div className="flex items-center gap-2 text-xs text-[#1C1B3A]">
                   <CheckCircle2 className="w-4 h-4 text-[#2DBA7D] shrink-0" />
-                  <span>Simpan Pinjam &amp; Simulasi Limit Pinjaman Karyawan</span>
+                  <span>Simpan Pinjam (Plafon 30% x 12 Bln) &amp; Verifikasi HRD</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-[#1C1B3A]">
                   <CheckCircle2 className="w-4 h-4 text-[#2DBA7D] shrink-0" />
-                  <span>Kelola Akun Mitra Kantin (Approval, Bekukan, Hapus)</span>
+                  <span>Monitoring Operasional Kantin Utama Pabrik &amp; POS</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-[#1C1B3A]">
                   <CheckCircle2 className="w-4 h-4 text-[#2DBA7D] shrink-0" />
@@ -149,7 +149,7 @@ export default function RootLandingPage() {
           </div>
 
           {/* ========================================================================= */}
-          {/* CARD 2: PORTAL MITRA KANTIN & USAHA KARYAWAN (MULTI-TENANT)              */}
+          {/* CARD 2: PORTAL KASIR & OPERASIONAL KANTIN PABRIK                         */}
           {/* ========================================================================= */}
           <div className="bg-white rounded-[24px] border border-[#E6E3F7] p-6 sm:p-8 shadow-xl shadow-[#4A3AFF]/5 hover:shadow-2xl hover:shadow-[#4A3AFF]/10 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
             {/* Top Accent Line */}
@@ -161,18 +161,18 @@ export default function RootLandingPage() {
                 <div className="w-13 h-13 rounded-[18px] bg-[#FFF4E5] text-[#D97706] flex items-center justify-center border border-[#FFE0B2] group-hover:scale-105 group-hover:bg-[#FFB547] group-hover:text-[#1C1B3A] transition-all">
                   <UtensilsCrossed className="w-7 h-7" />
                 </div>
-                <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-[#FFF4E5] text-[#D97706] border border-[#FFE0B2]">
-                  Multi-Tenant Kantin
+                <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-[#E6F9F0] text-[#2DBA7D] border border-[#2DBA7D]/30">
+                  Kantin Utama Pabrik
                 </span>
               </div>
 
               {/* Title & Description */}
               <div className="space-y-1.5">
                 <h2 className="text-lg sm:text-xl font-bold text-[#1C1B3A] group-hover:text-[#D97706] transition-colors">
-                  Portal Mitra Stand Kantin
+                  Portal Kasir &amp; Dapur Kantin BIT
                 </h2>
                 <p className="text-xs text-[#6F6B88] leading-relaxed">
-                  Ruang kerja khusus pemilik stand kantin untuk melayani kasir POS, menerima pesanan online dari karyawan, mengelola menu privat, dan mencairkan pendapatan.
+                  Ruang operasional petugas kasir dan dapur kantin pabrik untuk melayani antrean jam istirahat karyawan, memproses pesanan mobile, dan mengelola menu harian.
                 </p>
               </div>
 
@@ -180,39 +180,31 @@ export default function RootLandingPage() {
               <div className="space-y-2 pt-2 border-t border-[#E6E3F7]">
                 <div className="flex items-center gap-2 text-xs text-[#1C1B3A]">
                   <CheckCircle2 className="w-4 h-4 text-[#2DBA7D] shrink-0" />
-                  <span>Kasir POS Digital Stand &amp; Pembayaran Potong Gaji</span>
+                  <span>Kasir POS Cepat &amp; Pembayaran Uang Tunai / QRIS Statis Stand</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-[#1C1B3A]">
                   <CheckCircle2 className="w-4 h-4 text-[#2DBA7D] shrink-0" />
-                  <span>Terima Orderan Masuk dari Aplikasi Mobile Karyawan</span>
+                  <span>Kitchen Display System (KDS / Antrean Pesanan Karyawan)</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-[#1C1B3A]">
                   <CheckCircle2 className="w-4 h-4 text-[#2DBA7D] shrink-0" />
-                  <span>Kelola Menu Makanan, Stok Barang &amp; Dual-Pricing Anggota</span>
+                  <span>Kelola Ketersediaan Menu Makanan &amp; Minuman Siap Saji</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-[#1C1B3A]">
                   <CheckCircle2 className="w-4 h-4 text-[#2DBA7D] shrink-0" />
-                  <span>Laporan Omzet Penjualan &amp; Settlement Otomatis Koperasi</span>
+                  <span>Laporan Kas Harian Shift 1 &amp; Shift 2 Pabrik</span>
                 </div>
               </div>
             </div>
 
-            {/* Action Buttons (Login + Register) */}
-            <div className="pt-6 space-y-2.5">
+            {/* Action Button */}
+            <div className="pt-6">
               <Link
                 href="/canteen-portal/login"
                 className="w-full py-3.5 px-5 rounded-full bg-[#1C1B3A] hover:bg-[#2D2B56] active:scale-[0.98] text-white font-bold text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
-                <span>Masuk Portal Mitra Kantin</span>
+                <span>Masuk Portal Kasir Kantin</span>
                 <ArrowRight className="w-4 h-4" />
-              </Link>
-
-              <Link
-                href="/canteen-portal/register"
-                className="w-full py-2.5 px-5 rounded-full bg-[#F5F3FF] hover:bg-[#E6E3F7] text-[#4A3AFF] font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer border border-[#E6E3F7]"
-              >
-                <UserPlus className="w-3.5 h-3.5" />
-                <span>Daftar Mitra Kantin Baru (Registrasi Stand)</span>
               </Link>
             </div>
           </div>
@@ -221,12 +213,12 @@ export default function RootLandingPage() {
         {/* 3. QUICK STATS SUMMARY TICKER */}
         <div className="mt-10 sm:mt-12 p-4 sm:p-5 rounded-[20px] bg-white border border-[#E6E3F7] shadow-sm grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
           <div className="space-y-0.5">
-            <p className="text-[11px] text-[#6F6B88]">Mitra Kantin Terdaftar</p>
-            <p className="text-base sm:text-lg font-bold text-[#1C1B3A]">5 Stand Mitra</p>
+            <p className="text-[11px] text-[#6F6B88]">Fasilitas Kantin</p>
+            <p className="text-base sm:text-lg font-bold text-[#1C1B3A]">1 Kantin Utama (Shift 1 &amp; 2)</p>
           </div>
           <div className="space-y-0.5">
             <p className="text-[11px] text-[#6F6B88]">Metode Pembayaran</p>
-            <p className="text-base sm:text-lg font-bold text-[#4A3AFF]">Auto Payroll / Saldo</p>
+            <p className="text-base sm:text-lg font-bold text-[#4A3AFF]">Uang Tunai &amp; QRIS Statis</p>
           </div>
           <div className="space-y-0.5">
             <p className="text-[11px] text-[#6F6B88]">Jadwal Cutoff Payroll</p>

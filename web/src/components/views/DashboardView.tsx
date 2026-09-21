@@ -19,6 +19,9 @@ import {
   ChevronRight,
   Sparkles,
   Wrench,
+  FileSpreadsheet,
+  Printer,
+  FileText,
 } from "lucide-react";
 import {
   sampleEmployees,
@@ -26,11 +29,48 @@ import {
   sampleProducts,
   initialBankLiquidity,
 } from "@/data/mockData";
+import {
+  exportToCsv,
+  buildExecutiveDashboardReportConfig,
+  ReportConfig,
+} from "@/utils/reportExporter";
+import { ReportExportModal } from "@/components/common/ReportExportModal";
 
 export const DashboardView: React.FC = () => {
   const [loans, setLoans] = useState(sampleLoans);
   const [bankLiquidity, setBankLiquidity] = useState(initialBankLiquidity);
   const [showTopUpSuccess, setShowTopUpSuccess] = useState(false);
+
+  // Report Export State
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [currentExportConfig, setCurrentExportConfig] = useState<ReportConfig | null>(null);
+
+  const handleOpenExportModal = () => {
+    const totalSavings = sampleEmployees.reduce((acc, e) => acc + e.simpananWajib + e.simpananSukarela, 0);
+    const config = buildExecutiveDashboardReportConfig({
+      totalEmployees: sampleEmployees.length,
+      totalLoansDisbursed: bankLiquidity.totalActiveLoans,
+      totalSavings: totalSavings,
+      canteenRevenue: 18950000,
+      storeRevenue: 24500000,
+      bankLimitAvailable: bankLiquidity.bankCreditLineLimit - bankLiquidity.bankCreditLineUsed,
+    });
+    setCurrentExportConfig(config);
+    setIsExportModalOpen(true);
+  };
+
+  const handleDirectCsvExport = () => {
+    const totalSavings = sampleEmployees.reduce((acc, e) => acc + e.simpananWajib + e.simpananSukarela, 0);
+    const config = buildExecutiveDashboardReportConfig({
+      totalEmployees: sampleEmployees.length,
+      totalLoansDisbursed: bankLiquidity.totalActiveLoans,
+      totalSavings: totalSavings,
+      canteenRevenue: 18950000,
+      storeRevenue: 24500000,
+      bankLimitAvailable: bankLiquidity.bankCreditLineLimit - bankLiquidity.bankCreditLineUsed,
+    });
+    exportToCsv(config);
+  };
 
   // Simulation of salary deduction for 10jt case
   const exampleSalary = 10000000;
@@ -99,6 +139,22 @@ export const DashboardView: React.FC = () => {
             >
               Rekap Potong Gaji (Payroll HR)
             </Link>
+            <button
+              type="button"
+              onClick={handleDirectCsvExport}
+              className="px-4 py-2.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/30 text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-300" />
+              <span>Export Excel</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleOpenExportModal}
+              className="px-4 py-2.5 rounded-full bg-amber-400 hover:bg-amber-300 text-stone-900 text-xs font-bold transition-all cursor-pointer shadow-md flex items-center gap-1.5"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>Cetak Laporan Eksekutif</span>
+            </button>
           </div>
         </div>
       </div>
@@ -438,6 +494,15 @@ export const DashboardView: React.FC = () => {
           ))}
         </div>
       </div>
+
+      {/* Formal Cooperative Report Export Modal */}
+      {isExportModalOpen && currentExportConfig && (
+        <ReportExportModal
+          isOpen={isExportModalOpen}
+          onClose={() => setIsExportModalOpen(false)}
+          config={currentExportConfig}
+        />
+      )}
     </div>
   );
 };

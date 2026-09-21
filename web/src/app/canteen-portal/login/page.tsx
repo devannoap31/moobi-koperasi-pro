@@ -133,13 +133,10 @@ export default function CanteenLoginPage() {
           <span>Kembali ke Portal Utama</span>
         </Link>
 
-        <Link
-          href="/canteen-portal/register"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#4A3AFF] hover:underline"
-        >
-          <UserPlus className="w-3.5 h-3.5" />
-          <span>Daftar Mitra Kantin Baru</span>
-        </Link>
+        <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#2DBA7D] py-1 px-2.5 rounded-full bg-[#E6F9F0] border border-[#2DBA7D]/30">
+          <div className="w-1.5 h-1.5 rounded-full bg-[#2DBA7D] animate-pulse" />
+          <span>Kantin Utama Shift 1 &amp; Shift 2</span>
+        </div>
       </div>
 
       {/* Main Login Card */}
@@ -156,10 +153,10 @@ export default function CanteenLoginPage() {
             <div>
               <div className="flex items-center justify-center gap-1.5">
                 <span className="font-extrabold text-sm text-[#1C1B3A] tracking-tight">
-                  Portal Mitra Kantin
+                  Portal Kasir &amp; Dapur Kantin
                 </span>
                 <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-[#FFF4E5] text-[#D97706] border border-[#FFE0B2]">
-                  Merchant
+                  Kantin Utama
                 </span>
               </div>
               <p className="text-[11px] text-[#6F6B88] font-medium">
@@ -171,10 +168,10 @@ export default function CanteenLoginPage() {
           {/* Heading */}
           <div className="space-y-1 text-center sm:text-left border-t border-[#E6E3F7] pt-4">
             <h1 className="text-xl sm:text-2xl font-bold text-[#1C1B3A] tracking-tight flex items-center gap-2 justify-center sm:justify-start">
-              <span>Masuk Kasir Stand Kantin</span>
+              <span>Masuk Kasir Kantin BIT</span>
             </h1>
             <p className="text-xs text-[#6F6B88] leading-relaxed">
-              Masuk untuk melayani kasir POS, memproses orderan online karyawan, dan kelola menu stand Anda.
+              Masuk untuk melayani kasir POS antrean karyawan, display pesanan dapur (KDS), dan laporan kas harian shift pabrik.
             </p>
           </div>
 
@@ -204,7 +201,7 @@ export default function CanteenLoginPage() {
               <CheckCircle2 className="w-5 h-5 shrink-0 text-[#2DBA7D]" />
               <div className="text-xs">
                 <p className="font-bold">Login Berhasil! {successTenant.name}</p>
-                <p className="text-[11px] text-[#059669]/90">Membuka Kasir POS Stand...</p>
+                <p className="text-[11px] text-[#059669]/90">Membuka Kasir POS Kantin...</p>
               </div>
             </div>
           )}
@@ -222,7 +219,7 @@ export default function CanteenLoginPage() {
             {/* Identifier */}
             <div className="space-y-1.5">
               <label className="font-bold text-[#1C1B3A] block">
-                Username Stand / Email Mitra *
+                Username Petugas Kasir *
               </label>
               <div className="relative">
                 <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6F6B88] pointer-events-none">
@@ -230,7 +227,7 @@ export default function CanteenLoginPage() {
                 </div>
                 <input
                   type="text"
-                  placeholder="Contoh: kantin.sri atau email"
+                  placeholder="Contoh: kantin.sri atau kasir.kantin"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                   disabled={isLoading || !!successTenant}
@@ -280,7 +277,7 @@ export default function CanteenLoginPage() {
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Memverifikasi Akun Stand...</span>
+                  <span>Memverifikasi Akun Kasir...</span>
                 </>
               ) : successTenant ? (
                 <>
@@ -289,63 +286,39 @@ export default function CanteenLoginPage() {
                 </>
               ) : (
                 <>
-                  <span>Masuk ke Kasir Stand Kantin</span>
+                  <span>Masuk ke Kasir Kantin</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>
           </form>
 
-          {/* Quick Demo Stand Switcher */}
+          {/* Quick Demo Petugas Switcher */}
           <div className="pt-2 border-t border-[#E6E3F7] space-y-2">
             <p className="text-[10.5px] font-bold text-[#6F6B88] uppercase tracking-wider text-center">
-              Pilih Cepat Akun Stand Mitra (Demo):
+              Pilih Cepat Akun Petugas Kantin (Demo):
             </p>
-            <div className="grid grid-cols-2 gap-1.5">
-              {sampleCanteenTenants.slice(0, 4).map((t) => (
+            <div className="grid grid-cols-1 gap-1.5">
+              {sampleCanteenTenants.slice(0, 1).map((t) => (
                 <button
                   key={t.id}
                   type="button"
                   onClick={() => handleSelectQuickAccount(t)}
-                  className={`p-2 rounded-[12px] border text-left transition-all text-[11px] cursor-pointer ${identifier === t.username
+                  className={`p-2.5 rounded-[12px] border text-left transition-all text-xs cursor-pointer ${identifier === t.username
                       ? "bg-[#F5F3FF] border-[#4A3AFF] text-[#4A3AFF] font-bold"
                       : "bg-[#FAFAFC] border-[#E6E3F7] hover:bg-white text-[#1C1B3A]"
                     }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="truncate block font-semibold">{t.ownerName}</span>
-                    <span
-                      className={`text-[8.5px] px-1 py-0.2 rounded-full font-bold ${t.status === "ACTIVE"
-                          ? "bg-[#E6F9F0] text-[#2DBA7D]"
-                          : t.status === "PENDING_APPROVAL"
-                            ? "bg-[#FFF4E5] text-[#D97706]"
-                            : "bg-red-50 text-red-600"
-                        }`}
-                    >
-                      {t.status === "ACTIVE"
-                        ? "Aktif"
-                        : t.status === "PENDING_APPROVAL"
-                          ? "Pending"
-                          : "Beku"}
+                    <span className="truncate block font-semibold">{t.ownerName} (Petugas Kasir)</span>
+                    <span className="text-[9px] px-1.5 py-0.2 rounded-full font-bold bg-[#E6F9F0] text-[#2DBA7D]">
+                      Kantin Utama
                     </span>
                   </div>
-                  <p className="text-[9.5px] text-[#6F6B88] truncate">{t.name}</p>
+                  <p className="text-[10.5px] text-[#6F6B88]">{t.name} &bull; Username: <strong>{t.username}</strong></p>
                 </button>
               ))}
             </div>
-          </div>
-
-          {/* Register Link */}
-          <div className="pt-2 text-center">
-            <p className="text-[11px] text-[#6F6B88]">
-              Belum mendaftarkan stand kantin Anda?{" "}
-              <Link
-                href="/canteen-portal/register"
-                className="font-bold text-[#4A3AFF] hover:underline"
-              >
-                Daftar Mitra Sekarang
-              </Link>
-            </p>
           </div>
         </div>
       </div>
@@ -353,7 +326,7 @@ export default function CanteenLoginPage() {
       {/* Footer */}
       <footer className="w-full py-4 text-center text-xs text-[#6F6B88]">
         <p className="text-[11px] text-[#A5A2B8]">
-          &copy; 2026 PT. Bhakti Idola Tama — Portal Mitra Multi-Tenant Kopkar.
+          &copy; 2026 PT. Bhakti Idola Tama — Kantin Utama Koperasi Kopkar BIT.
         </p>
       </footer>
     </div>

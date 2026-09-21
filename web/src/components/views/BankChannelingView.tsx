@@ -30,6 +30,7 @@ import {
   ArrowUpRight,
   ShieldAlert,
   Percent,
+  FileSpreadsheet,
 } from "lucide-react";
 import {
   initialBankLiquidity,
@@ -47,6 +48,12 @@ import {
   BankRepaymentSchedule,
   H2HGatewayStatus,
 } from "@/types";
+import {
+  exportToCsv,
+  buildBankChannelingReportConfig,
+  ReportConfig,
+} from "@/utils/reportExporter";
+import { ReportExportModal } from "@/components/common/ReportExportModal";
 
 export const BankChannelingView: React.FC = () => {
   // Navigation Sub-tab
@@ -76,6 +83,21 @@ export const BankChannelingView: React.FC = () => {
 
   // Advice Slip Modal State
   const [selectedAdvice, setSelectedAdvice] = useState<BankDrawdownTranche | null>(null);
+
+  // Report Export State
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [currentExportConfig, setCurrentExportConfig] = useState<ReportConfig | null>(null);
+
+  const handleOpenExportModal = () => {
+    const config = buildBankChannelingReportConfig(drawdowns, debtors, partners);
+    setCurrentExportConfig(config);
+    setIsExportModalOpen(true);
+  };
+
+  const handleDirectCsvExport = () => {
+    const config = buildBankChannelingReportConfig(drawdowns, debtors, partners);
+    exportToCsv(config);
+  };
 
   // Search & Filters
   const [drawdownSearch, setDrawdownSearch] = useState("");
@@ -194,7 +216,23 @@ export const BankChannelingView: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={handleDirectCsvExport}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full border border-[#2DBA7D]/30 bg-[#E6F9F0] text-[#2DBA7D] hover:bg-[#2DBA7D] hover:text-white text-xs font-bold transition-colors cursor-pointer"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            <span>Export Excel</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleOpenExportModal}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#4A3AFF] hover:bg-[#6B5CEB] text-white text-xs font-bold transition-colors shadow-sm cursor-pointer"
+          >
+            <Printer className="w-4 h-4" />
+            <span>Cetak Rekap Channeling</span>
+          </button>
           <button
             onClick={() => setActiveTab("simulator")}
             className="px-4 py-2 rounded-full border border-[#4A3AFF] text-[#4A3AFF] bg-[#F5F3FF] hover:bg-[#ECE8FF] text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
@@ -1307,6 +1345,15 @@ export const BankChannelingView: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Formal Cooperative Report Export Modal */}
+      {isExportModalOpen && currentExportConfig && (
+        <ReportExportModal
+          isOpen={isExportModalOpen}
+          onClose={() => setIsExportModalOpen(false)}
+          config={currentExportConfig}
+        />
       )}
     </div>
   );

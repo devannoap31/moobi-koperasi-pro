@@ -125,23 +125,32 @@ export default function CanteenRegisterPage() {
             <div className="space-y-2 border-b border-[#E6E3F7] pb-4">
               <div className="flex items-center gap-2 text-xs font-bold text-[#4A3AFF]">
                 <Sparkles className="w-4 h-4" />
-                <span>Pendaftaran Mitra Usaha Kantin PT BIT</span>
+                <span>Kantin Utama Koperasi PT Bhakti Idola Tama</span>
               </div>
               <h1 className="text-xl sm:text-2xl font-bold text-[#1C1B3A] tracking-tight">
-                Registrasi Akun Stand Kantin Baru
+                Informasi Layanan Kantin Terpadu Pabrik
               </h1>
               <p className="text-xs text-[#6F6B88] leading-relaxed">
-                Daftarkan usaha kantin atau katering Anda untuk berjualan di ekosistem Kopkar PT Bhakti Idola Tama dan melayani ratusan karyawan secara digital.
+                Operasional kantin di lingkungan pabrik PT Bhakti Idola Tama dikelola secara terpusat oleh <strong>Kantin Utama Koperasi PT BIT</strong> untuk melayani seluruh karyawan (Shift 1 &amp; Shift 2). Pendaftaran stand pihak luar mandiri tidak diberlakukan.
               </p>
             </div>
 
-            {/* Error Banner */}
-            {errorMessage && (
-              <div className="p-3.5 rounded-[14px] bg-red-50 border border-red-200 text-red-700 flex items-center gap-2.5 animate-fadeIn text-xs">
-                <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
-                <span>{errorMessage}</span>
-              </div>
-            )}
+            <div className="p-4 rounded-[16px] bg-[#F5F3FF] border border-[#E6E3F7] space-y-3 text-xs">
+              <p className="font-bold text-[#4A3AFF] flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4" />
+                <span>Akses Portal Kasir &amp; Pengelola Kantin:</span>
+              </p>
+              <p className="text-[#6F6B88] leading-relaxed">
+                Untuk petugas kasir, juru masak, dan pengelola operasional kantin pabrik, silakan masuk melalui <strong>Portal Kasir &amp; POS Kantin BIT</strong> untuk melayani transaksi makan siang, display antrean dapur (KDS), dan laporan kas harian.
+              </p>
+              <Link
+                href="/canteen-portal/login"
+                className="inline-flex items-center justify-center gap-2 w-full py-3 rounded-full bg-[#4A3AFF] hover:bg-[#3D2EE0] text-white font-bold text-xs shadow-sm transition-all"
+              >
+                <span>Masuk ke Portal Kasir Kantin BIT</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
 
             {/* Registration Form */}
             <form onSubmit={handleSubmit} className="space-y-5 text-xs">

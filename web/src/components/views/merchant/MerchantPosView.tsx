@@ -48,7 +48,7 @@ export const MerchantPosView: React.FC = () => {
 
   // Cart & Checkout state
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [paymentMethod, setPaymentMethod] = useState<CanteenPaymentMethod>("POTONG_GAJI");
+  const [paymentMethod, setPaymentMethod] = useState<CanteenPaymentMethod>("CASH_TUNAI");
   const [cashReceivedInput, setCashReceivedInput] = useState<string>("");
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [showQrisPaymentModal, setShowQrisPaymentModal] = useState(false);
@@ -80,16 +80,15 @@ export const MerchantPosView: React.FC = () => {
   }, []);
 
   const categories: { id: string; label: string }[] = [
-    { id: "ALL", label: "Semua Kategori" },
-    { id: "MAKANAN", label: "Makanan Kantin" },
-    { id: "MINUMAN", label: "Minuman" },
-    { id: "ELEKTRONIK_BIT", label: "Elektronik & Perkakas BIT" },
-    { id: "ALAT_KERJA", label: "Alat Kerja & Safety" },
-    { id: "KEBUTUHAN_HARIAN", label: "Cookware & Harian" },
+    { id: "ALL", label: "Semua Menu Kantin" },
+    { id: "MAKANAN", label: "Makanan Siap Saji" },
+    { id: "MINUMAN", label: "Minuman & Kopi" },
   ];
 
-  // Filter Products
+  // Filter Products (Strictly Makanan & Minuman for Factory Canteen)
   const filteredProducts = products.filter((p) => {
+    const isFoodOrBeverage = p.category === "MAKANAN" || p.category === "MINUMAN";
+    if (!isFoodOrBeverage) return false;
     const matchCategory = selectedCategory === "ALL" || p.category === selectedCategory;
     const matchSearch =
       !debouncedSearch.trim() ||
@@ -529,56 +528,12 @@ export const MerchantPosView: React.FC = () => {
       {/* Payment Method Selector */}
       <div className="space-y-1.5 text-xs pt-2 border-t border-[#E6E3F7]">
         <div className="flex items-center justify-between">
-          <label className="font-bold text-[#1C1B3A]">Metode Pembayaran:</label>
-          {buyerType === "NON_MEMBER" && (
-            <span className="text-[10px] text-[#D97706] font-semibold">
-              *Non-karyawan hanya QRIS / Tunai
-            </span>
-          )}
+          <label className="font-bold text-[#1C1B3A]">Pilih Metode Pembayaran:</label>
+          <span className="text-[10px] text-[#2DBA7D] font-semibold">
+            *Tersedia: Uang Tunai &amp; QRIS Statis
+          </span>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-          <button
-            type="button"
-            disabled={buyerType === "NON_MEMBER"}
-            onClick={() => setPaymentMethod("POTONG_GAJI")}
-            className={`p-2 rounded-[10px] text-[11px] font-bold border transition-all cursor-pointer text-center ${
-              paymentMethod === "POTONG_GAJI" && buyerType === "MEMBER"
-                ? "bg-[#4A3AFF] text-white border-[#4A3AFF] shadow-xs"
-                : buyerType === "NON_MEMBER"
-                ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-                : "bg-[#FAFAFC] text-[#6F6B88] border-[#E6E3F7] hover:bg-white"
-            }`}
-          >
-            Potong Gaji
-          </button>
-
-          <button
-            type="button"
-            disabled={buyerType === "NON_MEMBER"}
-            onClick={() => setPaymentMethod("SALDO_KOPERASI")}
-            className={`p-2 rounded-[10px] text-[11px] font-bold border transition-all cursor-pointer text-center ${
-              paymentMethod === "SALDO_KOPERASI" && buyerType === "MEMBER"
-                ? "bg-[#4A3AFF] text-white border-[#4A3AFF] shadow-xs"
-                : buyerType === "NON_MEMBER"
-                ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-                : "bg-[#FAFAFC] text-[#6F6B88] border-[#E6E3F7] hover:bg-white"
-            }`}
-          >
-            Saldo Koperasi
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setPaymentMethod("QRIS_TUNAI")}
-            className={`p-2 rounded-[10px] text-[11px] font-bold border transition-all cursor-pointer text-center ${
-              paymentMethod === "QRIS_TUNAI"
-                ? "bg-[#4A3AFF] text-white border-[#4A3AFF] shadow-xs"
-                : "bg-[#FAFAFC] text-[#6F6B88] border-[#E6E3F7] hover:bg-white"
-            }`}
-          >
-            QRIS Stand
-          </button>
-
+        <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
             onClick={() => {
@@ -587,13 +542,27 @@ export const MerchantPosView: React.FC = () => {
                 setCashReceivedInput(effectiveSubtotal.toString());
               }
             }}
-            className={`p-2 rounded-[10px] text-[11px] font-bold border transition-all cursor-pointer text-center ${
+            className={`p-2.5 rounded-[12px] text-xs font-bold border transition-all cursor-pointer flex items-center justify-center gap-2 ${
               paymentMethod === "CASH_TUNAI"
                 ? "bg-[#2DBA7D] text-white border-[#2DBA7D] shadow-xs"
                 : "bg-[#FAFAFC] text-[#6F6B88] border-[#E6E3F7] hover:bg-white"
             }`}
           >
-            Tunai (Cash)
+            <Banknote className="w-4 h-4" />
+            <span>Uang Tunai (Cash)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setPaymentMethod("QRIS_TUNAI")}
+            className={`p-2.5 rounded-[12px] text-xs font-bold border transition-all cursor-pointer flex items-center justify-center gap-2 ${
+              paymentMethod === "QRIS_TUNAI"
+                ? "bg-[#4A3AFF] text-white border-[#4A3AFF] shadow-xs"
+                : "bg-[#FAFAFC] text-[#6F6B88] border-[#E6E3F7] hover:bg-white"
+            }`}
+          >
+            <QrCode className="w-4 h-4" />
+            <span>QRIS Statis Stand</span>
           </button>
         </div>
       </div>

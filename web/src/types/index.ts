@@ -5,6 +5,7 @@ export type SystemModuleKey =
   | "employees"
   | "savings_loans"
   | "canteen"
+  | "store"
   | "payroll"
   | "bank_channeling"
   | "user_management";
@@ -73,6 +74,69 @@ export interface LoanApplication {
 }
 
 export type ProductCategory = "MAKANAN" | "MINUMAN" | "ELEKTRONIK_BIT" | "ALAT_KERJA" | "KEBUTUHAN_HARIAN";
+
+// ==========================================
+// TOKO KOPERASI & PENJUALAN ELEKTRONIK / BARANG
+// ==========================================
+export type StoreCategory =
+  | "ELEKTRONIK_RUMAH"
+  | "PERKAKAS_KERJA"
+  | "PERALATAN_DAPUR"
+  | "KESEHATAN_SAFETY"
+  | "MERCHANDISE_BIT";
+
+export interface StoreProduct {
+  id: string;
+  code: string; // e.g. "ELK-001"
+  name: string;
+  category: StoreCategory;
+  brand: string; // e.g. "Maspion", "Cosmos", "Philips", "Bosch", "Krisbow"
+  cashPrice: number; // Harga Kontan / Tunai Koperasi
+  memberPrice: number; // Harga Khusus Anggota Koperasi
+  installmentAvailable: boolean; // Bisa dicicil via Payroll
+  maxInstallmentMonths: number; // e.g. 12 bulan
+  stock: number;
+  unit: string; // e.g. "Unit", "Set", "Pcs"
+  imageUrl: string;
+  description: string;
+  warrantyPeriod: string; // e.g. "1 Tahun Resmi"
+  rating?: number;
+  soldCount?: number;
+}
+
+export type StorePaymentMethod = "TUNAI" | "QRIS_MANDIRI" | "POTONG_GAJI_CICILAN" | "SALDO_SUKARELA";
+
+export interface StoreTransactionItem {
+  productId: string;
+  productCode: string;
+  productName: string;
+  price: number;
+  quantity: number;
+  subtotal: number;
+  imageUrl?: string;
+}
+
+export interface StoreTransaction {
+  id: string;
+  invoiceNumber: string; // e.g. "INV-STORE-2026-089"
+  employeeId: string;
+  employeeNik: string;
+  employeeName: string;
+  department: string;
+  position: PositionLevel;
+  items: StoreTransactionItem[];
+  totalAmount: number;
+  totalSaved: number;
+  paymentMethod: StorePaymentMethod;
+  installmentMonths?: number; // e.g. 1, 3, 6, 12 Bulan
+  monthlyInstallment?: number; // Nominal potong gaji / bulan
+  payrollCutoffDay?: number; // 25
+  status: "LUNAS" | "CICILAN_BERJALAN";
+  cashReceived?: number;
+  cashChange?: number;
+  transactionDate: string; // YYYY-MM-DD HH:mm
+  notes?: string;
+}
 
 export type TenantStatus = "PENDING_APPROVAL" | "ACTIVE" | "SUSPENDED" | "REJECTED";
 

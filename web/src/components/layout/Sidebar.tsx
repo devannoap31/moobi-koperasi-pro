@@ -18,6 +18,8 @@ import {
   Store,
   ShoppingBag,
   UtensilsCrossed,
+  Factory,
+  ArrowLeft,
 } from "lucide-react";
 import { useSidebar } from "@/context/SidebarContext";
 
@@ -34,7 +36,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { isCollapsed, toggleSidebar, isMobileOpen, closeMobileSidebar } = useSidebar();
 
   // Resizable Sidebar Width State (VSCode-like manual resize)
-  const [sidebarWidth, setSidebarWidth] = useState<number>(280);
+  const [sidebarWidth, setSidebarWidth] = useState<number>(270);
   const [isResizing, setIsResizing] = useState<boolean>(false);
 
   useEffect(() => {
@@ -304,18 +306,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        {/* Desktop Footer (Clean User & Expand Action without Bank Mandiri card) */}
-        <div className="p-3 border-t border-[#E6E3F7]/70 bg-white overflow-visible">
+        {/* Desktop Footer (Clean User & Expand Action with Return to Portal) */}
+        <div className={`border-t border-[#E6E3F7]/70 bg-white overflow-visible ${isCollapsed ? "p-2 space-y-2" : "p-3 space-y-2"}`}>
           {!isCollapsed ? (
-            <div className="flex items-center justify-between p-1">
+            <div className="space-y-2">
               <Link
                 href="/users"
-                className="flex items-center gap-2.5 text-left group min-w-0"
+                className="flex items-center gap-2.5 p-2 rounded-[12px] bg-[#FAFAFC] border border-[#E6E3F7] text-left group min-w-0 hover:bg-[#F5F3FF] transition-all"
               >
                 <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#4A3AFF] to-[#8E79F5] text-white flex items-center justify-center font-bold text-[11px] shrink-0 shadow-xs">
                   BIT
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="text-xs font-bold text-[#1C1B3A] group-hover:text-[#4A3AFF] transition-colors leading-tight truncate">
                     Pengurus Kopkar
                   </p>
@@ -323,28 +325,57 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </div>
               </Link>
 
-              <Link
-                href="/login"
-                title="Keluar / Logout"
-                className="p-2 rounded-full bg-white hover:bg-red-50 text-[#6F6B88] hover:text-[#EF4444] border border-[#E6E3F7] transition-colors shrink-0 aspect-square cursor-pointer"
-              >
-                <LogOut className="w-4 h-4" />
-              </Link>
+              {/* Action Buttons Row */}
+              <div className="flex items-center gap-1.5">
+                <Link
+                  href="/"
+                  title="Kembali ke Pintu Masuk Portal"
+                  className="flex-1 flex items-center gap-2 px-3 py-2.5 rounded-[12px] text-xs font-bold text-[#6F6B88] bg-[#FAFAFC] hover:bg-[#F5F3FF] hover:text-[#4A3AFF] border border-[#E6E3F7] transition-all cursor-pointer shadow-xs"
+                >
+                  <ArrowLeft className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Pilih Portal Lain</span>
+                </Link>
+
+                <Link
+                  href="/login"
+                  title="Keluar / Logout"
+                  className="p-2.5 rounded-[12px] bg-red-50/60 hover:bg-red-50 text-red-500 hover:text-red-600 border border-red-100 transition-all shrink-0 aspect-square cursor-pointer shadow-xs flex items-center justify-center"
+                >
+                  <LogOut className="w-4 h-4" />
+                </Link>
+              </div>
             </div>
           ) : (
-            <div className="relative group flex justify-center overflow-visible">
-              <button
-                onClick={toggleSidebar}
-                title="Buka / Lebarkan Sidebar"
-                className="w-11 h-11 rounded-full bg-[#F5F3FF] hover:bg-[#4A3AFF] hover:text-white border border-[#E6E3F7] text-[#4A3AFF] flex items-center justify-center transition-all cursor-pointer shadow-xs aspect-square"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </button>
+            <div className="flex flex-col items-center gap-2 overflow-visible">
+              {/* Collapsed Back to Portal Button */}
+              <div className="relative group w-full flex justify-center">
+                <Link
+                  href="/"
+                  className="w-10 h-10 rounded-[12px] bg-[#FAFAFC] hover:bg-[#F5F3FF] hover:text-[#4A3AFF] border border-[#E6E3F7] text-[#6F6B88] flex items-center justify-center transition-all cursor-pointer shadow-xs aspect-square"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </Link>
+                <div className="absolute left-[calc(100%+12px)] top-1/2 -translate-y-1/2 z-50 pointer-events-none opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150">
+                  <div className="bg-[#1C1B3A] text-white py-1.5 px-3 rounded-[10px] shadow-xl text-xs font-bold whitespace-nowrap border border-white/10 flex items-center gap-2">
+                    <div className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 bg-[#1C1B3A] rotate-45 border-l border-b border-white/10"></div>
+                    <span>Kembali ke Pintu Masuk Portal</span>
+                  </div>
+                </div>
+              </div>
 
-              <div className="absolute left-[calc(100%+14px)] top-1/2 -translate-y-1/2 z-50 pointer-events-none opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150">
-                <div className="bg-[#1C1B3A] text-white py-1.5 px-3 rounded-[10px] shadow-xl text-xs font-bold whitespace-nowrap border border-white/10">
-                  <div className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 bg-[#1C1B3A] rotate-45 border-l border-b border-white/10"></div>
-                  Buka / Lebarkan Menu Sidebar
+              {/* Collapsed Logout Button */}
+              <div className="relative group w-full flex justify-center">
+                <Link
+                  href="/login"
+                  className="w-10 h-10 rounded-[12px] bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-600 border border-red-200 flex items-center justify-center transition-all cursor-pointer shadow-xs aspect-square"
+                >
+                  <LogOut className="w-4 h-4" />
+                </Link>
+                <div className="absolute left-[calc(100%+12px)] top-1/2 -translate-y-1/2 z-50 pointer-events-none opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150">
+                  <div className="bg-[#1C1B3A] text-white py-1.5 px-3 rounded-[10px] shadow-xl text-xs font-bold whitespace-nowrap border border-white/10 flex items-center gap-2">
+                    <div className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 bg-[#1C1B3A] rotate-45 border-l border-b border-white/10"></div>
+                    <span>Keluar Portal Koperasi</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -469,9 +500,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </nav>
         </div>
 
-        {/* Mobile Footer User & Logout (Clean without Bank Mandiri card) */}
-        <div className="p-4 border-t border-[#E6E3F7] space-y-3 bg-[#FAFAFC] shrink-0">
-          <div className="flex items-center justify-between pt-1">
+        {/* Mobile Footer User & Logout */}
+        <div className="p-4 border-t border-[#E6E3F7] space-y-2.5 bg-[#FAFAFC] shrink-0">
+          <div className="flex items-center justify-between">
             <Link
               href="/users"
               onClick={closeMobileSidebar}
@@ -491,12 +522,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <Link
               href="/login"
               onClick={closeMobileSidebar}
-              title="Keluar"
+              title="Keluar / Logout"
               className="p-2 rounded-full bg-white hover:bg-red-50 text-[#6F6B88] hover:text-[#EF4444] border border-[#E6E3F7] transition-colors shrink-0 aspect-square"
             >
               <LogOut className="w-4 h-4" />
             </Link>
           </div>
+
+          <Link
+            href="/"
+            onClick={closeMobileSidebar}
+            className="flex items-center justify-center gap-2 w-full py-2.5 rounded-full bg-[#F5F3FF] hover:bg-[#E6E3F7] text-[#4A3AFF] font-bold text-xs transition-all cursor-pointer shadow-xs"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Pilih Modul / Portal Lain</span>
+          </Link>
         </div>
       </div>
     </>

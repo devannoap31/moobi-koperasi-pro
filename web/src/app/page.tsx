@@ -18,6 +18,7 @@ import {
   Lock,
   ReceiptText,
   UserPlus,
+  Factory,
 } from "lucide-react";
 
 export default function RootLandingPage() {
@@ -85,65 +86,65 @@ export default function RootLandingPage() {
           </p>
         </div>
 
-        {/* Dual Portal Gateway Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+        {/* Triple Portal Gateway Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-6">
           {/* ========================================================================= */}
           {/* CARD 1: PORTAL PENGURUS & ADMIN KOPERASI                                 */}
           {/* ========================================================================= */}
-          <div className="bg-white rounded-[24px] border border-[#E6E3F7] p-6 sm:p-8 shadow-xl shadow-[#4A3AFF]/5 hover:shadow-2xl hover:shadow-[#4A3AFF]/10 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
+          <div className="bg-white rounded-[24px] border border-[#E6E3F7] p-6 shadow-xl shadow-[#4A3AFF]/5 hover:shadow-2xl hover:shadow-[#4A3AFF]/10 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
             {/* Top Accent Line */}
             <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#4A3AFF] to-[#8E79F5]" />
 
-            <div className="space-y-5">
+            <div className="space-y-4">
               {/* Header Icon & Badge */}
               <div className="flex items-center justify-between">
-                <div className="w-13 h-13 rounded-[18px] bg-[#F5F3FF] text-[#4A3AFF] flex items-center justify-center border border-[#E6E3F7] group-hover:scale-105 group-hover:bg-[#4A3AFF] group-hover:text-white transition-all">
-                  <ShieldCheck className="w-7 h-7" />
+                <div className="w-12 h-12 rounded-[16px] bg-[#F5F3FF] text-[#4A3AFF] flex items-center justify-center border border-[#E6E3F7] group-hover:scale-105 group-hover:bg-[#4A3AFF] group-hover:text-white transition-all">
+                  <ShieldCheck className="w-6 h-6" />
                 </div>
-                <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-[#F5F3FF] text-[#4A3AFF] border border-[#E6E3F7]">
+                <span className="text-[10.5px] font-bold px-2.5 py-0.5 rounded-full bg-[#F5F3FF] text-[#4A3AFF] border border-[#E6E3F7]">
                   Pengurus &amp; Superadmin
                 </span>
               </div>
 
               {/* Title & Description */}
-              <div className="space-y-1.5">
-                <h2 className="text-lg sm:text-xl font-bold text-[#1C1B3A] group-hover:text-[#4A3AFF] transition-colors">
+              <div className="space-y-1">
+                <h2 className="text-base sm:text-lg font-bold text-[#1C1B3A] group-hover:text-[#4A3AFF] transition-colors">
                   Portal Manajemen Koperasi
                 </h2>
                 <p className="text-xs text-[#6F6B88] leading-relaxed">
-                  Pusat administrasi internal untuk mengelola simpan pinjam anggota (DSR 30%), data karyawan, monitoring operasional kantin pabrik, integrasi payroll HRD, dan bank channeling.
+                  Pusat administrasi simpan pinjam anggota (DSR 30%), data karyawan, rekap payroll HRD, dan bank channeling Mandiri.
                 </p>
               </div>
 
               {/* Feature Highlights */}
-              <div className="space-y-2 pt-2 border-t border-[#E6E3F7]">
-                <div className="flex items-center gap-2 text-xs text-[#1C1B3A]">
-                  <CheckCircle2 className="w-4 h-4 text-[#2DBA7D] shrink-0" />
-                  <span>Simpan Pinjam (Plafon 30% x 12 Bln) &amp; Verifikasi HRD</span>
+              <div className="space-y-1.5 pt-2 border-t border-[#E6E3F7]">
+                <div className="flex items-center gap-2 text-[11.5px] text-[#1C1B3A]">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#2DBA7D] shrink-0" />
+                  <span>Simpan Pinjam &amp; Verifikasi Plafon HRD</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-[#1C1B3A]">
-                  <CheckCircle2 className="w-4 h-4 text-[#2DBA7D] shrink-0" />
-                  <span>Monitoring Operasional Kantin Utama Pabrik &amp; POS</span>
+                <div className="flex items-center gap-2 text-[11.5px] text-[#1C1B3A]">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#2DBA7D] shrink-0" />
+                  <span>Toko Koperasi &amp; Penjualan Elektronik</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-[#1C1B3A]">
-                  <CheckCircle2 className="w-4 h-4 text-[#2DBA7D] shrink-0" />
-                  <span>Monitoring Arus Kas Belanja &amp; Jatuh Tempo Payroll (Tgl 25)</span>
+                <div className="flex items-center gap-2 text-[11.5px] text-[#1C1B3A]">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#2DBA7D] shrink-0" />
+                  <span>Rekapitulasi Potong Gaji (Tgl 25)</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-[#1C1B3A]">
-                  <CheckCircle2 className="w-4 h-4 text-[#2DBA7D] shrink-0" />
-                  <span>Likuiditas Channeling Plafon Rp 1.5 M Bank Mandiri</span>
+                <div className="flex items-center gap-2 text-[11.5px] text-[#1C1B3A]">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#2DBA7D] shrink-0" />
+                  <span>Channeling Plafon Rp 1.5 M Mandiri</span>
                 </div>
               </div>
             </div>
 
             {/* Action Button */}
-            <div className="pt-6">
+            <div className="pt-5">
               <Link
                 href="/login"
-                className="w-full py-3.5 px-5 rounded-full bg-[#4A3AFF] hover:bg-[#3D2EE0] active:scale-[0.98] text-white font-bold text-xs sm:text-sm shadow-md shadow-[#4A3AFF]/20 flex items-center justify-center gap-2 transition-all cursor-pointer group-hover:gap-3"
+                className="w-full py-3 px-4 rounded-full bg-[#4A3AFF] hover:bg-[#3D2EE0] active:scale-[0.98] text-white font-bold text-xs shadow-md shadow-[#4A3AFF]/20 flex items-center justify-center gap-2 transition-all cursor-pointer group-hover:gap-2.5"
               >
-                <span>Masuk sebagai Pengurus / Admin</span>
-                <ArrowRight className="w-4 h-4" />
+                <span>Masuk Portal Koperasi</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
           </div>
@@ -151,60 +152,121 @@ export default function RootLandingPage() {
           {/* ========================================================================= */}
           {/* CARD 2: PORTAL KASIR & OPERASIONAL KANTIN PABRIK                         */}
           {/* ========================================================================= */}
-          <div className="bg-white rounded-[24px] border border-[#E6E3F7] p-6 sm:p-8 shadow-xl shadow-[#4A3AFF]/5 hover:shadow-2xl hover:shadow-[#4A3AFF]/10 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
+          <div className="bg-white rounded-[24px] border border-[#E6E3F7] p-6 shadow-xl shadow-[#4A3AFF]/5 hover:shadow-2xl hover:shadow-[#4A3AFF]/10 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
             {/* Top Accent Line */}
             <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#FFB547] via-[#2DBA7D] to-[#4A3AFF]" />
 
-            <div className="space-y-5">
+            <div className="space-y-4">
               {/* Header Icon & Badge */}
               <div className="flex items-center justify-between">
-                <div className="w-13 h-13 rounded-[18px] bg-[#FFF4E5] text-[#D97706] flex items-center justify-center border border-[#FFE0B2] group-hover:scale-105 group-hover:bg-[#FFB547] group-hover:text-[#1C1B3A] transition-all">
-                  <UtensilsCrossed className="w-7 h-7" />
+                <div className="w-12 h-12 rounded-[16px] bg-[#FFF4E5] text-[#D97706] flex items-center justify-center border border-[#FFE0B2] group-hover:scale-105 group-hover:bg-[#FFB547] group-hover:text-[#1C1B3A] transition-all">
+                  <UtensilsCrossed className="w-6 h-6" />
                 </div>
-                <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-[#E6F9F0] text-[#2DBA7D] border border-[#2DBA7D]/30">
-                  Kantin Utama Pabrik
+                <span className="text-[10.5px] font-bold px-2.5 py-0.5 rounded-full bg-[#E6F9F0] text-[#2DBA7D] border border-[#2DBA7D]/30">
+                  Kantin Pabrik BIT
                 </span>
               </div>
 
               {/* Title & Description */}
-              <div className="space-y-1.5">
-                <h2 className="text-lg sm:text-xl font-bold text-[#1C1B3A] group-hover:text-[#D97706] transition-colors">
+              <div className="space-y-1">
+                <h2 className="text-base sm:text-lg font-bold text-[#1C1B3A] group-hover:text-[#D97706] transition-colors">
                   Portal Kasir &amp; Dapur Kantin BIT
                 </h2>
                 <p className="text-xs text-[#6F6B88] leading-relaxed">
-                  Ruang operasional petugas kasir dan dapur kantin pabrik untuk melayani antrean jam istirahat karyawan, memproses pesanan mobile, dan mengelola menu harian.
+                  Ruang kasir POS cepat melayani jam istirahat makan karyawan pabrik dan antrean pesanan makanan siap saji.
                 </p>
               </div>
 
               {/* Feature Highlights */}
-              <div className="space-y-2 pt-2 border-t border-[#E6E3F7]">
-                <div className="flex items-center gap-2 text-xs text-[#1C1B3A]">
-                  <CheckCircle2 className="w-4 h-4 text-[#2DBA7D] shrink-0" />
-                  <span>Kasir POS Cepat &amp; Pembayaran Uang Tunai / QRIS Statis Stand</span>
+              <div className="space-y-1.5 pt-2 border-t border-[#E6E3F7]">
+                <div className="flex items-center gap-2 text-[11.5px] text-[#1C1B3A]">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#2DBA7D] shrink-0" />
+                  <span>Kasir POS Kasir &amp; Uang Tunai / QRIS Statis</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-[#1C1B3A]">
-                  <CheckCircle2 className="w-4 h-4 text-[#2DBA7D] shrink-0" />
-                  <span>Kitchen Display System (KDS / Antrean Pesanan Karyawan)</span>
+                <div className="flex items-center gap-2 text-[11.5px] text-[#1C1B3A]">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#2DBA7D] shrink-0" />
+                  <span>Kitchen Display Antrean Pesanan Karyawan</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-[#1C1B3A]">
-                  <CheckCircle2 className="w-4 h-4 text-[#2DBA7D] shrink-0" />
-                  <span>Kelola Ketersediaan Menu Makanan &amp; Minuman Siap Saji</span>
+                <div className="flex items-center gap-2 text-[11.5px] text-[#1C1B3A]">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#2DBA7D] shrink-0" />
+                  <span>Status Stok Menu Makanan &amp; Minuman Siap Saji</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-[#1C1B3A]">
-                  <CheckCircle2 className="w-4 h-4 text-[#2DBA7D] shrink-0" />
-                  <span>Laporan Kas Harian Shift 1 &amp; Shift 2 Pabrik</span>
+                <div className="flex items-center gap-2 text-[11.5px] text-[#1C1B3A]">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#2DBA7D] shrink-0" />
+                  <span>Laporan Omzet Kas Harian Shift 1 &amp; Shift 2</span>
                 </div>
               </div>
             </div>
 
             {/* Action Button */}
-            <div className="pt-6">
+            <div className="pt-5">
               <Link
                 href="/canteen-portal/login"
-                className="w-full py-3.5 px-5 rounded-full bg-[#1C1B3A] hover:bg-[#2D2B56] active:scale-[0.98] text-white font-bold text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
+                className="w-full py-3 px-4 rounded-full bg-[#1C1B3A] hover:bg-[#2D2B56] active:scale-[0.98] text-white font-bold text-xs shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
                 <span>Masuk Portal Kasir Kantin</span>
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          </div>
+
+          {/* ========================================================================= */}
+          {/* CARD 3: MODUL MANAJEMEN PRODUKSI & BAHAN BAKU                            */}
+          {/* ========================================================================= */}
+          <div className="bg-white rounded-[24px] border border-[#E6E3F7] p-6 shadow-xl shadow-[#4A3AFF]/5 hover:shadow-2xl hover:shadow-[#4A3AFF]/10 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
+            {/* Top Accent Line */}
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#2DBA7D] via-[#4A3AFF] to-[#6B5CEB]" />
+
+            <div className="space-y-4">
+              {/* Header Icon & Badge */}
+              <div className="flex items-center justify-between">
+                <div className="w-12 h-12 rounded-[16px] bg-[#EBFBF5] text-[#2DBA7D] flex items-center justify-center border border-[#B8F2D8] group-hover:scale-105 group-hover:bg-[#2DBA7D] group-hover:text-white transition-all">
+                  <Factory className="w-6 h-6" />
+                </div>
+                <span className="text-[10.5px] font-bold px-2.5 py-0.5 rounded-full bg-[#F5F3FF] text-[#4A3AFF] border border-[#E6E3F7]">
+                  Produksi &amp; HPP/COGS
+                </span>
+              </div>
+
+              {/* Title & Description */}
+              <div className="space-y-1">
+                <h2 className="text-base sm:text-lg font-bold text-[#1C1B3A] group-hover:text-[#2DBA7D] transition-colors">
+                  Modul Manajemen Produksi &amp; Bahan Baku
+                </h2>
+                <p className="text-xs text-[#6F6B88] leading-relaxed">
+                  Pengolahan resep menu kantin (Batagor, Mie Ayam, dll.), kalkulasi HPP/COGS, PO &amp; penerimaan bahan, pemakaian, dan stok opname.
+                </p>
+              </div>
+
+              {/* Feature Highlights */}
+              <div className="space-y-1.5 pt-2 border-t border-[#E6E3F7]">
+                <div className="flex items-center gap-2 text-[11.5px] text-[#1C1B3A]">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#2DBA7D] shrink-0" />
+                  <span>Setting Resep BOM &amp; Kalkulasi Otomatis COGS / Margin</span>
+                </div>
+                <div className="flex items-center gap-2 text-[11.5px] text-[#1C1B3A]">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#2DBA7D] shrink-0" />
+                  <span>Master Bahan Baku &amp; Konversi Satuan (Kg ➔ gram/ml)</span>
+                </div>
+                <div className="flex items-center gap-2 text-[11.5px] text-[#1C1B3A]">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#2DBA7D] shrink-0" />
+                  <span>PO Supplier &amp; Faktur Pembelian Tambah Stok</span>
+                </div>
+                <div className="flex items-center gap-2 text-[11.5px] text-[#1C1B3A]">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#2DBA7D] shrink-0" />
+                  <span>Stok Opname Fisik &amp; Kartu Mutasi Bahan Baku</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Button */}
+            <div className="pt-5">
+              <Link
+                href="/production/login"
+                className="w-full py-3 px-4 rounded-full bg-gradient-to-r from-[#2DBA7D] to-[#25A26C] hover:opacity-95 active:scale-[0.98] text-white font-bold text-xs shadow-md shadow-[#2DBA7D]/20 flex items-center justify-center gap-2 transition-all cursor-pointer group-hover:gap-2.5"
+              >
+                <span>Masuk Modul Produksi</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
           </div>

@@ -411,4 +411,249 @@ export interface H2HGatewayStatus {
   dailyTransactionUsed: number;
 }
 
+// ==========================================
+// 🏭 MODUL PRODUKSI & MANAJEMEN BAHAN BAKU
+// ==========================================
+
+export interface RawMaterialCategory {
+  id: string;
+  code: string;
+  name: string;
+  order: number;
+  inventoryAccountCode: string; // e.g. "1130215"
+  expenseAccountCode: string;   // e.g. "5110224"
+  description?: string;
+}
+
+export interface Supplier {
+  id: string;
+  code: string;
+  name: string;
+  contactPerson: string;
+  phone: string;
+  address: string;
+  city: string;
+  supplierType: "PASAR_TRADISIONAL" | "GROSIR" | "DISTRIBUTOR" | "SUPERMARKET" | "LOKAL";
+  paymentTermDays: number;
+  notes?: string;
+}
+
+export interface RawMaterial {
+  id: string;
+  code: string; // e.g. "BB-001"
+  barcode?: string;
+  name: string;
+  categoryId: string;
+  categoryName: string;
+  purchaseUnit: string; // e.g. "Kg", "Liter", "Sak", "Dus", "Karton", "PCS", "Pack"
+  unitRatio: number;    // e.g. 1000 (1 Kg = 1000 gram)
+  usageUnit: string;    // e.g. "gram", "ml", "pcs", "butir", "lembar"
+  lastPurchasePrice: number; // e.g. 48000 (Rp 48.000 / Kg)
+  usageUnitPrice: number;    // e.g. 48 (Rp 48 / gram)
+  minStock: number;          // Safety stock alert in usageUnit (e.g. 3000 gr)
+  currentStock: number;      // Current stock in usageUnit (e.g. 12500 gr)
+  bddYieldPercent?: number;  // Berat Dapat Dimakan % (e.g. 85%)
+  shrinkagePercent?: number; // Susut % (e.g. 5%)
+  supplierId?: string;
+  supplierName?: string;
+  leadTimeDays?: number;     // e.g. 1 hari
+  status: "AKTIF" | "NONAKTIF";
+  caloriesPerUnit?: number;  // kkal / usageUnit (opsional SPPG)
+  proteinPerUnit?: number;   // gram / usageUnit
+  fatPerUnit?: number;       // gram / usageUnit
+  carbsPerUnit?: number;     // gram / usageUnit
+  specificationNotes?: string;
+}
+
+export interface RecipeIngredient {
+  id: string;
+  rawMaterialId: string;
+  rawMaterialCode: string;
+  rawMaterialName: string;
+  usageUnit: string;
+  usageUnitPrice: number;
+  amountPerPortion: number; // e.g. 80 (80 gram)
+  subtotalCogs: number;     // usageUnitPrice * amountPerPortion
+  costPercentage?: number;  // e.g. 45%
+  calories?: number;
+  protein?: number;
+  fat?: number;
+  carbs?: number;
+}
+
+export interface MenuRecipe {
+  id: string;
+  menuCode: string; // e.g. "MNU-001"
+  menuName: string; // e.g. "Batagor Spesial BIT"
+  category: "MAKANAN" | "MINUMAN" | "SNACK";
+  sellingPrice: number; // e.g. 16000
+  portionYield: number; // Standard 1 portion
+  ingredients: RecipeIngredient[];
+  totalCogs: number; // Total HPP Bahan Baku (sum of subtotalCogs)
+  grossProfitRp: number; // sellingPrice - totalCogs
+  grossProfitPercent: number; // (grossProfitRp / sellingPrice) * 100
+  totalCalories: number;
+  totalProtein: number;
+  totalFat: number;
+  totalCarbs: number;
+  instructions?: string;
+  imageUrl?: string;
+  lastUpdated: string;
+}
+
+export interface PurchaseOrderItem {
+  id: string;
+  rawMaterialId: string;
+  rawMaterialCode: string;
+  rawMaterialName: string;
+  categoryName: string;
+  purchaseUnit: string;
+  unitRatio: number;
+  unitPrice: number;
+  quantity: number;
+  discountAmount: number;
+  subtotal: number;
+}
+
+export interface PurchaseOrder {
+  id: string;
+  poNumber: string; // e.g. "PO-BB/2026/09/001"
+  orderDate: string;
+  expectedDeliveryDate: string;
+  supplierId: string;
+  supplierName: string;
+  supplierContact?: string;
+  supplierPhone?: string;
+  supplierAddress?: string;
+  location: string; // e.g. "Dapur Kantin Pabrik BIT (Lt. 1)"
+  items: PurchaseOrderItem[];
+  subtotal: number;
+  discountPercent: number;
+  discountAmount: number;
+  shippingAdminCost: number;
+  grandTotal: number;
+  status: "DRAFT" | "SENT" | "RECEIVED" | "CANCELLED";
+  notes?: string;
+  createdAt: string;
+}
+
+export interface RawMaterialPurchaseItem {
+  id: string;
+  rawMaterialId: string;
+  rawMaterialCode: string;
+  rawMaterialName: string;
+  purchaseUnit: string;
+  unitRatio: number;
+  usageUnit: string;
+  unitPrice: number;
+  quantityReceived: number;
+  totalStockAdded: number; // quantityReceived * unitRatio
+  subtotal: number;
+}
+
+export interface RawMaterialPurchase {
+  id: string;
+  invoiceNumber: string; // e.g. "INV-BB/2026/09/014"
+  purchaseDate: string;
+  poNumber?: string;
+  supplierId: string;
+  supplierName: string;
+  supplierPhone?: string;
+  vehiclePlateNumber?: string;
+  location: string;
+  paymentType: "TUNAI_KAS_DAPUR" | "TRANSFER_KOPERASI" | "TEMPO_HUTANG";
+  cashBook: string; // e.g. "KAS DAPUR KANTIN" | "KAS UTAMA KOPKAR"
+  items: RawMaterialPurchaseItem[];
+  subtotal: number;
+  discountAmount: number;
+  adminCost: number;
+  grandTotal: number;
+  amountPaid: number;
+  amountDue: number; // Sisa hutang jika tempo
+  notes?: string;
+  createdAt: string;
+}
+
+export interface RawMaterialUsageItem {
+  id: string;
+  rawMaterialId: string;
+  rawMaterialCode: string;
+  rawMaterialName: string;
+  usageUnit: string;
+  unitPrice: number;
+  quantityUsed: number;
+  subtotalCost: number;
+}
+
+export interface RawMaterialUsage {
+  id: string;
+  usageNumber: string; // e.g. "USG/2026/09/001"
+  usageDate: string;
+  batchCode?: string; // e.g. "BATCH-BATAGOR-0921"
+  menuId?: string;
+  menuName?: string;
+  portionCount?: number;
+  cookPic: string; // e.g. "Siti Rahayu (Chef Kantin)"
+  shift: "SHIFT_1" | "SHIFT_2" | "GENERAL";
+  location: string;
+  mode: "RECIPE_BATCH" | "MANUAL_AD_HOC";
+  items: RawMaterialUsageItem[];
+  totalUsageCost: number;
+  notes?: string;
+  createdAt: string;
+}
+
+export interface StockOpnameItem {
+  id: string;
+  rawMaterialId: string;
+  rawMaterialCode: string;
+  rawMaterialName: string;
+  categoryName: string;
+  usageUnit: string;
+  unitPrice: number;
+  systemStock: number;
+  systemValue: number;
+  physicalStock: number;
+  physicalValue: number;
+  varianceQty: number; // physicalStock - systemStock
+  varianceValue: number; // varianceQty * unitPrice
+  varianceStatus: "MATCH" | "SHORTAGE" | "SURPLUS";
+  reason?: string;
+}
+
+export interface StockOpname {
+  id: string;
+  opnameNumber: string; // e.g. "SO-BB/2026/09/001"
+  opnameDate: string;
+  location: string;
+  auditorName: string;
+  shiftPic?: string;
+  items: StockOpnameItem[];
+  totalSystemValue: number;
+  totalPhysicalValue: number;
+  totalVarianceValue: number;
+  status: "DRAFT" | "ADJUSTED";
+  notes?: string;
+  createdAt: string;
+}
+
+export interface StockMutation {
+  id: string;
+  rawMaterialId: string;
+  rawMaterialCode: string;
+  rawMaterialName: string;
+  timestamp: string;
+  referenceNumber: string;
+  mutationType: "PEMBELIAN_MASUK" | "PENGGUNAAN_DAPUR" | "OPNAME_PENYESUAIAN";
+  qtyIn: number;
+  qtyOut: number;
+  endingBalance: number;
+  unit: string;
+  unitPrice: number;
+  totalValue: number;
+  pic: string;
+  notes?: string;
+}
+
+
 

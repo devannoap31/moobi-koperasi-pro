@@ -2,22 +2,14 @@
 
 import React, { useState } from "react";
 import {
-  Users,
   Search,
-  Filter,
-  ShieldCheck,
   Lock,
   Unlock,
-  Coins,
-  TrendingUp,
   Info,
-  Building2,
-  Briefcase,
   FileSpreadsheet,
   Printer,
 } from "lucide-react";
-import { sampleEmployees, calculateDynamicLoanLimit } from "@/data/mockData";
-import { EmployeeMember, PositionLevel } from "@/types";
+import { sampleEmployees } from "@/data/mockData";
 import { useDebounce } from "@/hooks/useDebounce";
 import {
   exportToCsv,

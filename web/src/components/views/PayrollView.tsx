@@ -2,14 +2,10 @@
 
 import React, { useState } from "react";
 import {
-  ReceiptText,
-  Download,
   FileSpreadsheet,
   FileText,
   CheckCircle2,
   Calendar,
-  Building2,
-  ShieldCheck,
   Search,
 } from "lucide-react";
 import { samplePayrollDeductions } from "@/data/mockData";
@@ -23,7 +19,7 @@ import {
 import { ReportExportModal } from "@/components/common/ReportExportModal";
 
 export const PayrollView: React.FC = () => {
-  const [deductions, setDeductions] = useState<PayrollDeductionRecord[]>(samplePayrollDeductions);
+  const [deductions] = useState<PayrollDeductionRecord[]>(samplePayrollDeductions);
   const [selectedPeriod, setSelectedPeriod] = useState("September 2026");
   const [searchTerm, setSearchTerm] = useState("");
   const [exportNotice, setExportNotice] = useState<string | null>(null);
@@ -41,8 +37,6 @@ export const PayrollView: React.FC = () => {
   const totalBaseSalary = filtered.reduce((acc, d) => acc + d.baseSalary, 0);
   const totalSimpananWajib = filtered.reduce((acc, d) => acc + d.simpananWajibDeduction, 0);
   const totalCicilan = filtered.reduce((acc, d) => acc + d.loanInstallmentDeduction, 0);
-  const totalKantin = filtered.reduce((acc, d) => acc + d.canteenBillDeduction, 0);
-  const totalAllDeductions = filtered.reduce((acc, d) => acc + d.totalDeductions, 0);
   const totalTakeHomePay = filtered.reduce((acc, d) => acc + d.netTakeHomePay, 0);
 
   const handleExportExcel = () => {

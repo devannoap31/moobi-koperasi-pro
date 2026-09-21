@@ -11,10 +11,7 @@ import {
   CheckCircle2,
   Receipt,
   Search,
-  Tag,
-  CreditCard,
   UserCheck,
-  ShieldCheck,
   Sparkles,
   Clock,
   Bell,
@@ -22,12 +19,7 @@ import {
   X,
   Edit3,
   AlertTriangle,
-  ArrowRight,
-  ChevronRight,
-  Package,
   Layers,
-  FileText,
-  Filter,
   Info,
   Printer,
   Smartphone,
@@ -39,7 +31,6 @@ import {
   ProductCategory,
   CanteenOrder,
   CanteenOrderStatus,
-  CanteenOrderItem,
   CanteenPaymentMethod,
 } from "@/types";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -64,7 +55,6 @@ export const CanteenView: React.FC = () => {
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>("ALL");
   const [orderSearchTerm, setOrderSearchTerm] = useState("");
   const debouncedOrderSearch = useDebounce(orderSearchTerm, 300);
-  const [selectedOrderDetail, setSelectedOrderDetail] = useState<CanteenOrder | null>(null);
 
   // POS Walk-in Cart State
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -697,7 +687,6 @@ export const CanteenView: React.FC = () => {
                 ) : (
                   cart.map((item) => {
                     const price = isMember ? item.product.memberPrice : item.product.regularPrice;
-                    const itemTotal = price * item.quantity;
 
                     return (
                       <div key={item.product.id} className="pt-2.5 first:pt-0 flex items-center justify-between gap-2">

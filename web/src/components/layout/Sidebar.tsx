@@ -12,25 +12,20 @@ import {
   Landmark,
   ShieldCheck,
   ChevronLeft,
-  ChevronRight,
   X,
   LogOut,
-  Store,
   ShoppingBag,
   UtensilsCrossed,
-  Factory,
   ArrowLeft,
 } from "lucide-react";
 import { useSidebar } from "@/context/SidebarContext";
 
 interface SidebarProps {
   pendingLoansCount?: number;
-  pendingCanteenRequestsCount?: number;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   pendingLoansCount = 2,
-  pendingCanteenRequestsCount = 1,
 }) => {
   const pathname = usePathname();
   const { isCollapsed, toggleSidebar, isMobileOpen, closeMobileSidebar } = useSidebar();

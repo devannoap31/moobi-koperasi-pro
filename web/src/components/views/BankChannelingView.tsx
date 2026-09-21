@@ -9,26 +9,18 @@ import {
   CheckCircle2,
   RefreshCw,
   Coins,
-  ArrowRight,
   FileText,
   Users,
   Calculator,
   Calendar,
   Layers,
   Search,
-  Filter,
-  Download,
-  ExternalLink,
-  ChevronRight,
   Clock,
   Sparkles,
   Printer,
   X,
   Building2,
-  DollarSign,
   Activity,
-  ArrowUpRight,
-  ShieldAlert,
   Percent,
   FileSpreadsheet,
 } from "lucide-react";
@@ -49,8 +41,8 @@ import {
   H2HGatewayStatus,
 } from "@/types";
 import {
-  exportToCsv,
   buildBankChannelingReportConfig,
+  exportToCsv,
   ReportConfig,
 } from "@/utils/reportExporter";
 import { ReportExportModal } from "@/components/common/ReportExportModal";
@@ -61,13 +53,13 @@ export const BankChannelingView: React.FC = () => {
     "overview" | "partners" | "drawdowns" | "debtors" | "simulator" | "repayments"
   >("overview");
 
-  // State
+  // Main Datasets (Interactive State)
   const [liquidity, setLiquidity] = useState<BankLiquidityStatus>(initialBankLiquidity);
   const [partners, setPartners] = useState<BankPartnerProfile[]>(sampleBankPartners);
   const [drawdowns, setDrawdowns] = useState<BankDrawdownTranche[]>(sampleDrawdownTranches);
-  const [debtors, setDebtors] = useState<ChannelingLoanDebtor[]>(sampleChannelingDebtors);
-  const [repayments, setRepayments] = useState<BankRepaymentSchedule[]>(sampleBankRepayments);
-  const [gateways, setGateways] = useState<H2HGatewayStatus[]>(sampleH2HGateways);
+  const [debtors] = useState<ChannelingLoanDebtor[]>(sampleChannelingDebtors);
+  const [repayments] = useState<BankRepaymentSchedule[]>(sampleBankRepayments);
+  const [gateways] = useState<H2HGatewayStatus[]>(sampleH2HGateways);
 
   // Form State for Top-Up / Drawdown
   const [selectedBankId, setSelectedBankId] = useState<string>("BANK-01");
@@ -89,13 +81,13 @@ export const BankChannelingView: React.FC = () => {
   const [currentExportConfig, setCurrentExportConfig] = useState<ReportConfig | null>(null);
 
   const handleOpenExportModal = () => {
-    const config = buildBankChannelingReportConfig(drawdowns, debtors, partners);
+    const config = buildBankChannelingReportConfig(debtors, liquidity, drawdowns);
     setCurrentExportConfig(config);
     setIsExportModalOpen(true);
   };
 
   const handleDirectCsvExport = () => {
-    const config = buildBankChannelingReportConfig(drawdowns, debtors, partners);
+    const config = buildBankChannelingReportConfig(debtors, liquidity, drawdowns);
     exportToCsv(config);
   };
 

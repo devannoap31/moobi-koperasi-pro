@@ -1,45 +1,25 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import Image from "next/image";
 import {
   Factory,
-  UtensilsCrossed,
   ChefHat,
-  PackageCheck,
-  Boxes,
-  ShoppingCart,
-  FileText,
   Plus,
   Search,
-  Filter,
   CheckCircle2,
   AlertCircle,
-  Clock,
   Printer,
-  FileSpreadsheet,
-  ArrowRight,
-  TrendingUp,
-  TrendingDown,
   Trash2,
-  Edit3,
-  RefreshCw,
-  Sparkles,
-  Layers,
   Flame,
   Scale,
   DollarSign,
-  Building2,
   Phone,
   MapPin,
-  Calendar,
   Check,
   X,
-  ChevronDown,
-  ArrowUpRight,
-  ShieldCheck,
   Eye,
   Percent,
+  Boxes,
 } from "lucide-react";
 import {
   RawMaterialCategory,
@@ -47,9 +27,7 @@ import {
   RawMaterial,
   RecipeIngredient,
   MenuRecipe,
-  PurchaseOrderItem,
   PurchaseOrder,
-  RawMaterialPurchaseItem,
   RawMaterialPurchase,
   RawMaterialUsageItem,
   RawMaterialUsage,
@@ -98,12 +76,12 @@ export const ProductionManagementView: React.FC<ProductionManagementViewProps> =
   }, [initialTab]);
 
   // Main Datasets (Interactive local state)
-  const [categories, setCategories] = useState<RawMaterialCategory[]>(sampleRawMaterialCategories);
-  const [suppliers, setSuppliers] = useState<Supplier[]>(sampleSuppliers);
+  const [categories] = useState<RawMaterialCategory[]>(sampleRawMaterialCategories);
+  const [suppliers] = useState<Supplier[]>(sampleSuppliers);
   const [rawMaterials, setRawMaterials] = useState<RawMaterial[]>(sampleRawMaterials);
   const [recipes, setRecipes] = useState<MenuRecipe[]>(sampleMenuRecipes);
-  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>(samplePurchaseOrders);
-  const [purchases, setPurchases] = useState<RawMaterialPurchase[]>(sampleRawMaterialPurchases);
+  const [purchaseOrders] = useState<PurchaseOrder[]>(samplePurchaseOrders);
+  const [purchases] = useState<RawMaterialPurchase[]>(sampleRawMaterialPurchases);
   const [usages, setUsages] = useState<RawMaterialUsage[]>(sampleRawMaterialUsages);
   const [stockOpnames, setStockOpnames] = useState<StockOpname[]>(sampleStockOpnames);
   const [mutations, setMutations] = useState<StockMutation[]>(sampleStockMutations);
@@ -118,17 +96,11 @@ export const ProductionManagementView: React.FC<ProductionManagementViewProps> =
 
   // Modals & Drawers
   const [showAddMaterialModal, setShowAddMaterialModal] = useState(false);
-  const [showCreatePoModal, setShowCreatePoModal] = useState(false);
-  const [showCreatePurchaseModal, setShowCreatePurchaseModal] = useState(false);
   const [showCookingSessionModal, setShowCookingSessionModal] = useState(false);
   const [showStockOpnameModal, setShowStockOpnameModal] = useState(false);
-  const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
-  const [showAddSupplierModal, setShowAddSupplierModal] = useState(false);
 
   // Selected for Details
   const [viewingPo, setViewingPo] = useState<PurchaseOrder | null>(null);
-  const [viewingPurchase, setViewingPurchase] = useState<RawMaterialPurchase | null>(null);
-  const [viewingUsage, setViewingUsage] = useState<RawMaterialUsage | null>(null);
   const [selectedMutationMaterialId, setSelectedMutationMaterialId] = useState<string>("BB-006");
 
   // Report Export State
@@ -756,37 +728,6 @@ export const ProductionManagementView: React.FC<ProductionManagementViewProps> =
         </div>
       </div>
 
-      {/* 2. SUB-NAVIGATION TABS */}
-      <div className="bg-white p-2 rounded-[20px] border border-[#E6E3F7] shadow-sm flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-        {[
-          { id: "RECIPES", label: "Resep & COGS Menu (BOM)", icon: ChefHat },
-          { id: "RAW_MATERIALS", label: "Master Bahan Baku", icon: Boxes },
-          { id: "PURCHASE_ORDERS", label: "PO Pembelian", icon: FileText },
-          { id: "PURCHASES", label: "Faktur Pembelian Masuk", icon: ShoppingCart },
-          { id: "USAGE", label: "Penggunaan / Sesi Masak", icon: UtensilsCrossed },
-          { id: "STOCK_OPNAME", label: "Stok Opname & Audit", icon: Scale },
-          { id: "STOCK_MUTATIONS", label: "Kartu Stok & Mutasi", icon: Layers },
-          { id: "CATEGORIES_SUPPLIERS", label: "Kategori & Supplier", icon: Building2 },
-        ].map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as ProductionTab)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
-                isActive
-                  ? "bg-[#4A3AFF] text-white shadow-sm shadow-[#4A3AFF]/25"
-                  : "text-[#6F6B88] hover:bg-[#F5F3FF] hover:text-[#4A3AFF]"
-              }`}
-            >
-              <Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-[#6F6B88]"}`} />
-              <span>{tab.label}</span>
-            </button>
-          );
-        })}
-      </div>
-
       {/* ========================================================================= */}
       {/* TAB 1: SETTING RESEP & COGS MENU (BOM - BILL OF MATERIALS)               */}
       {/* ========================================================================= */}
@@ -1285,7 +1226,7 @@ export const ProductionManagementView: React.FC<ProductionManagementViewProps> =
                 </p>
               </div>
               <button
-                onClick={() => setShowCreatePoModal(true)}
+                onClick={() => showToast("Form pembuatan Surat PO Baru ke Supplier siap diproses.", "info")}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#4A3AFF] hover:bg-[#3D2EE0] text-white text-xs font-bold shadow-sm shadow-[#4A3AFF]/20 transition-all cursor-pointer shrink-0"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -1372,7 +1313,7 @@ export const ProductionManagementView: React.FC<ProductionManagementViewProps> =
                 </p>
               </div>
               <button
-                onClick={() => setShowCreatePurchaseModal(true)}
+                onClick={() => showToast("Form input faktur pembelian bahan baku siap diproses.", "info")}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#2DBA7D] hover:bg-[#25A26C] text-white text-xs font-bold shadow-sm shadow-[#2DBA7D]/20 transition-all cursor-pointer shrink-0"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -1430,7 +1371,7 @@ export const ProductionManagementView: React.FC<ProductionManagementViewProps> =
                       </td>
                       <td className="py-3 px-3 text-center">
                         <button
-                          onClick={() => setViewingPurchase(pur)}
+                          onClick={() => showToast(`Faktur ${pur.invoiceNumber} (${pur.supplierName}) siap dicetak.`, "info")}
                           className="p-1.5 rounded-full bg-[#F5F3FF] hover:bg-[#4A3AFF] hover:text-white text-[#4A3AFF] transition-colors cursor-pointer"
                           title="Lihat Barang Diterima"
                         >
@@ -1510,7 +1451,7 @@ export const ProductionManagementView: React.FC<ProductionManagementViewProps> =
                       </td>
                       <td className="py-3 px-3 text-center">
                         <button
-                          onClick={() => setViewingUsage(usg)}
+                          onClick={() => showToast(`Rincian sesi masak ${usg.usageNumber} (${usg.menuName || "BOM"}) siap dicetak.`, "info")}
                           className="p-1.5 rounded-full bg-[#F5F3FF] hover:bg-[#4A3AFF] hover:text-white text-[#4A3AFF] transition-colors cursor-pointer"
                           title="Lihat Komposisi yang Dipakai"
                         >

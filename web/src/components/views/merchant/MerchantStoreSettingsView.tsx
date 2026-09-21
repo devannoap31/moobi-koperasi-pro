@@ -3,7 +3,6 @@
 import React, { useState, useRef } from "react";
 import Image from "next/image";
 import {
-  Store,
   MapPin,
   Clock,
   Phone,
@@ -22,7 +21,6 @@ import {
   ShieldCheck,
   CheckCircle2,
   Image as ImageIcon,
-  ExternalLink,
 } from "lucide-react";
 import { useMerchant } from "@/context/MerchantContext";
 import { CanteenQrisProfile } from "@/types";
@@ -33,7 +31,6 @@ export const MerchantStoreSettingsView: React.FC = () => {
     updateStoreInfo,
     showToast,
     qrisProfiles,
-    activeQris,
     addQrisProfile,
     updateQrisProfile,
     deleteQrisProfile,

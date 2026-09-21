@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import {
   UtensilsCrossed,
   ShoppingBag,
@@ -11,44 +11,26 @@ import {
   Minus,
   Trash2,
   CheckCircle2,
-  Receipt,
   Search,
-  Tag,
-  CreditCard,
-  UserCheck,
-  ShieldCheck,
-  Sparkles,
-  Clock,
   Bell,
   Check,
   X,
   Edit3,
   AlertTriangle,
-  ArrowRight,
   ChevronRight,
   Package,
-  Layers,
-  FileText,
-  Filter,
   Info,
   Printer,
   Smartphone,
-  CheckCircle,
-  Store,
   MapPin,
-  Building2,
-  DollarSign,
   TrendingUp,
   LogOut,
-  ChevronDown,
   User,
   UserX,
   Loader2,
   AlertCircle,
   QrCode,
-  Maximize2,
   Banknote,
-  Coins,
 } from "lucide-react";
 import {
   sampleProducts,
@@ -62,7 +44,6 @@ import {
   ProductCategory,
   CanteenOrder,
   CanteenOrderStatus,
-  CanteenOrderItem,
   CanteenPaymentMethod,
   CanteenTenant,
   EmployeeMember,
@@ -76,7 +57,6 @@ interface CartItem {
 
 export const MerchantCanteenView: React.FC = () => {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const tenantIdParam = searchParams.get("tenantId") || "tenant-01";
 
   // Active Tenant
@@ -269,11 +249,6 @@ export const MerchantCanteenView: React.FC = () => {
       buyerType === "MEMBER" ? item.product.memberPrice : item.product.regularPrice;
     return acc + unitPrice * item.quantity;
   }, 0);
-
-  const cartSubtotalRegular = cart.reduce(
-    (acc, item) => acc + item.product.regularPrice * item.quantity,
-    0
-  );
 
   const totalMemberSavings =
     buyerType === "MEMBER"

@@ -5,21 +5,14 @@ import {
   Search,
   Smartphone,
   Check,
-  X,
-  Clock,
   CheckCircle,
-  AlertCircle,
-  FileText,
-  User,
-  QrCode,
-  Layers,
 } from "lucide-react";
 import { useMerchant } from "@/context/MerchantContext";
 import { CanteenOrder, CanteenOrderStatus } from "@/types";
 import { useDebounce } from "@/hooks/useDebounce";
 
 export const MerchantOrdersView: React.FC = () => {
-  const { orders, updateOrderStatus, showToast } = useMerchant();
+  const { orders, updateOrderStatus } = useMerchant();
 
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>("ALL");
   const [orderSearchTerm, setOrderSearchTerm] = useState("");

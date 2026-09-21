@@ -10,7 +10,6 @@ import {
   Edit3,
   SlidersHorizontal,
   Mail,
-  User,
   Building2,
   CheckCircle2,
   AlertTriangle,
@@ -27,7 +26,7 @@ import {
   X,
   ShoppingBag,
 } from "lucide-react";
-import { initialUserAccounts, SYSTEM_MODULE_LIST, SystemModuleConfig } from "@/data/mockData";
+import { initialUserAccounts, SYSTEM_MODULE_LIST } from "@/data/mockData";
 import { UserAccount, UserRole, SystemModuleKey, ModuleAccessLevel } from "@/types";
 import { useDebounce } from "@/hooks/useDebounce";
 

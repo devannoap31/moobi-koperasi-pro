@@ -1,4 +1,3 @@
-import React from "react";
 import { MerchantPosView } from "@/components/views/merchant/MerchantPosView";
 import { Metadata } from "next";
 

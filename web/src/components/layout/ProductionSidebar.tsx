@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   ChefHat,
@@ -18,13 +17,7 @@ import {
   ChevronRight,
   LogOut,
   X,
-  Sparkles,
-  LayoutGrid,
-  ShieldCheck,
-  Store,
-  AlertTriangle,
   ArrowLeft,
-  DollarSign,
 } from "lucide-react";
 import { useSidebar } from "@/context/SidebarContext";
 import { useProduction } from "@/context/ProductionContext";

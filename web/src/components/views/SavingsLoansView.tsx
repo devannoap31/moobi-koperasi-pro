@@ -4,30 +4,25 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   Wallet,
   Coins,
-  TrendingUp,
   CheckCircle2,
   XCircle,
   Clock,
   Lock,
   Unlock,
-  PlusCircle,
   Landmark,
   Calculator,
   AlertCircle,
-  Sparkles,
   Search,
   Loader2,
   Check,
   X,
   FileSpreadsheet,
   Printer,
-  FileText,
 } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
 import {
   sampleLoans,
   sampleEmployees,
-  calculateDynamicLoanLimit,
 } from "@/data/mockData";
 import { LoanApplication, LoanStatus } from "@/types";
 import {

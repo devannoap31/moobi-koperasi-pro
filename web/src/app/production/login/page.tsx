@@ -1,12 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Factory,
-  ChefHat,
   Lock,
   User,
   Eye,
@@ -17,10 +15,7 @@ import {
   ArrowRight,
   ShieldCheck,
   ChevronLeft,
-  Sparkles,
   Clock,
-  Boxes,
-  Scale,
 } from "lucide-react";
 
 interface ProductionUserAccount {

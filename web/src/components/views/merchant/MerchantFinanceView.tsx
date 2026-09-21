@@ -4,30 +4,19 @@ import React, { useState, useMemo } from "react";
 import Image from "next/image";
 import {
   TrendingUp,
-  DollarSign,
-  Calendar,
-  CreditCard,
   QrCode,
   X,
-  Check,
   Building2,
-  Layers,
   Clock,
-  Download,
   Printer,
   Search,
-  Filter,
   ArrowUpRight,
-  Wallet,
   Banknote,
   Sparkles,
   ShoppingBag,
   Receipt,
   FileSpreadsheet,
-  AlertCircle,
   BarChart3,
-  CheckCircle2,
-  ChevronDown,
 } from "lucide-react";
 import { useMerchant } from "@/context/MerchantContext";
 import { CanteenPaymentMethod } from "@/types";
@@ -56,13 +45,11 @@ interface LedgerTransaction {
 }
 
 export const MerchantFinanceView: React.FC = () => {
-  const { currentTenant, settlements, orders } = useMerchant();
+  const { currentTenant, settlements } = useMerchant();
   const [showQrisPreviewModal, setShowQrisPreviewModal] = useState(false);
   const [showPrintReportModal, setShowPrintReportModal] = useState(false);
 
-  const [selectedMonth, setSelectedMonth] = useState("2026-09");
   const [paymentFilter, setPaymentFilter] = useState("ALL");
-  const [statusFilter, setStatusFilter] = useState("ALL");
   const [dateFilter, setDateFilter] = useState<"ALL" | "TODAY" | "7_DAYS">("ALL");
   const [searchTerm, setSearchTerm] = useState("");
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
@@ -221,14 +208,13 @@ export const MerchantFinanceView: React.FC = () => {
   // Filtered Ledger
   const filteredLedger = sampleTransactions.filter((tx) => {
     const matchPayment = paymentFilter === "ALL" || tx.paymentMethod === paymentFilter;
-    const matchStatus = statusFilter === "ALL" || tx.disbursementStatus === statusFilter;
     const matchSearch =
       !debouncedSearch.trim() ||
       tx.customerName.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
       tx.orderNumber.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
       (tx.customerNik && tx.customerNik.toLowerCase().includes(debouncedSearch.toLowerCase())) ||
       tx.itemsSummary.toLowerCase().includes(debouncedSearch.toLowerCase());
-    return matchPayment && matchStatus && matchSearch;
+    return matchPayment && matchSearch;
   });
 
   // Export handlers

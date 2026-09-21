@@ -8,9 +8,6 @@ import {
   Landmark,
   X,
   Loader2,
-  User,
-  ArrowRight,
-  ShieldCheck,
   LogOut,
 } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -25,7 +22,6 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ onSearch }) => {
   const { isMobileOpen, toggleMobileSidebar } = useSidebar();
   const [searchTerm, setSearchTerm] = useState("");
-  const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<EmployeeMember[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
@@ -51,8 +47,6 @@ export const Header: React.FC<HeaderProps> = ({ onSearch }) => {
   // Trigger search logic when debounced value changes
   useEffect(() => {
     if (debouncedSearchTerm.trim()) {
-      setIsSearching(true);
-      
       // Simulate debounced search processing
       const results = sampleEmployees.filter(
         (emp) =>
@@ -62,7 +56,6 @@ export const Header: React.FC<HeaderProps> = ({ onSearch }) => {
       );
 
       setSearchResults(results);
-      setIsSearching(false);
       setShowDropdown(true);
 
       if (onSearch) {
@@ -71,7 +64,6 @@ export const Header: React.FC<HeaderProps> = ({ onSearch }) => {
     } else {
       setSearchResults([]);
       setShowDropdown(false);
-      setIsSearching(false);
       if (onSearch) {
         onSearch("");
       }

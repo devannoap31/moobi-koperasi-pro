@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -14,13 +13,9 @@ import {
   CheckCircle2,
   Loader2,
   ArrowRight,
-  ShieldCheck,
   ChevronLeft,
-  Sparkles,
-  Info,
   Clock,
   Ban,
-  UserPlus,
 } from "lucide-react";
 import { sampleCanteenTenants } from "@/data/mockData";
 import { CanteenTenant } from "@/types";

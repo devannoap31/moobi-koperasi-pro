@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import {
   Store,
@@ -11,19 +10,13 @@ import {
   AlertTriangle,
   Clock,
   Search,
-  Filter,
   TrendingUp,
   Receipt,
-  Building2,
-  Calendar,
   AlertCircle,
-  FileText,
   ExternalLink,
   MapPin,
   Sparkles,
   Send,
-  Phone,
-  Mail,
   UserCheck,
   CreditCard,
   QrCode,
@@ -50,7 +43,7 @@ export const SuperadminCanteenManagementView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"PROFILE" | "ACTIVITIES" | "SETTINGS">("PROFILE");
 
   // Employee Activities State
-  const [activities, setActivities] = useState<EmployeeCanteenActivity[]>(sampleEmployeeCanteenActivities);
+  const [activities] = useState<EmployeeCanteenActivity[]>(sampleEmployeeCanteenActivities);
   const [activitySearchTerm, setActivitySearchTerm] = useState("");
   const debouncedActivitySearch = useDebounce(activitySearchTerm, 300);
   const [activityPaymentFilter, setActivityPaymentFilter] = useState<string>("ALL");

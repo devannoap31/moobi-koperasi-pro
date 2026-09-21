@@ -4,10 +4,7 @@ import React from "react";
 import { usePathname } from "next/navigation";
 import {
   Menu,
-  Bell,
-  Store,
   Calendar,
-  Sparkles,
   ShoppingBag,
   Smartphone,
   Package,

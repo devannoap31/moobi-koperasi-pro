@@ -2,17 +2,10 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
-  UtensilsCrossed,
   User,
   Store,
-  MapPin,
-  Phone,
-  Mail,
   CreditCard,
-  Lock,
-  CheckCircle2,
   Clock,
   ArrowRight,
   ChevronLeft,
@@ -24,8 +17,6 @@ import { sampleCanteenTenants } from "@/data/mockData";
 import { CanteenTenant } from "@/types";
 
 export default function CanteenRegisterPage() {
-  const router = useRouter();
-
   // Form State
   const [formData, setFormData] = useState({
     name: "",
@@ -154,6 +145,12 @@ export default function CanteenRegisterPage() {
 
             {/* Registration Form */}
             <form onSubmit={handleSubmit} className="space-y-5 text-xs">
+              {errorMessage && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-[12px] text-red-600 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{errorMessage}</span>
+                </div>
+              )}
               {/* SECTION 1: Informasi Usaha */}
               <div className="space-y-3.5">
                 <p className="text-[11px] font-bold uppercase tracking-wider text-[#4A3AFF] flex items-center gap-1.5">

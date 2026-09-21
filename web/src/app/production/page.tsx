@@ -1,4 +1,3 @@
-import React from "react";
 import { ProductionManagementView } from "@/components/views/ProductionManagementView";
 import { Metadata } from "next";
 

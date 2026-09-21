@@ -5,23 +5,18 @@ import Link from "next/link";
 import {
   Wallet,
   TrendingUp,
-  Users,
   UtensilsCrossed,
   Receipt,
   AlertTriangle,
   Landmark,
   CheckCircle2,
   XCircle,
-  Clock,
-  ArrowUpRight,
   ShieldCheck,
   Calculator,
   ChevronRight,
   Sparkles,
-  Wrench,
   FileSpreadsheet,
   Printer,
-  FileText,
 } from "lucide-react";
 import {
   sampleEmployees,

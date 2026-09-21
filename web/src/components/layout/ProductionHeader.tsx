@@ -1,20 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
-import Link from "next/link";
 import {
   Menu,
-  Search,
-  Bell,
   Printer,
   FileSpreadsheet,
-  Factory,
-  Sparkles,
-  ChevronDown,
-  ShieldCheck,
-  Building2,
-  UtensilsCrossed,
 } from "lucide-react";
 import { useSidebar } from "@/context/SidebarContext";
 import { useProduction } from "@/context/ProductionContext";

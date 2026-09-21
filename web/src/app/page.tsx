@@ -1,23 +1,13 @@
 "use client";
 
-import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
   ShieldCheck,
-  Building2,
   UtensilsCrossed,
   ArrowRight,
   Sparkles,
-  Store,
-  Wallet,
-  Landmark,
-  ShoppingBag,
-  Users,
   CheckCircle2,
-  Lock,
-  ReceiptText,
-  UserPlus,
   Factory,
 } from "lucide-react";
 

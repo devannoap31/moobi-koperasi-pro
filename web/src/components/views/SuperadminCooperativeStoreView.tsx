@@ -10,30 +10,18 @@ import {
   Trash2,
   CheckCircle2,
   AlertCircle,
-  AlertTriangle,
   QrCode,
   Printer,
   Sparkles,
   CreditCard,
-  Building2,
   Clock,
-  User,
   X,
   Edit3,
   Package,
-  Layers,
-  Check,
-  ChevronRight,
-  ShieldCheck,
-  RefreshCw,
-  Coins,
   Banknote,
   Receipt,
   FileText,
-  BadgePercent,
-  SlidersHorizontal,
   ArrowRight,
-  Loader2,
   FileSpreadsheet,
 } from "lucide-react";
 import {
@@ -121,7 +109,6 @@ export const SuperadminCooperativeStoreView: React.FC = () => {
   const debouncedTxSearch = useDebounce(txSearch, 300);
   const [txStatusFilter, setTxStatusFilter] = useState<string>("ALL");
   const [txPaymentFilter, setTxPaymentFilter] = useState<string>("ALL");
-  const [selectedTxForDetail, setSelectedTxForDetail] = useState<StoreTransaction | null>(null);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [reportConfig, setReportConfig] = useState<FormalReportConfig | null>(null);
 
@@ -376,7 +363,6 @@ export const SuperadminCooperativeStoreView: React.FC = () => {
   const totalCatalogCount = products.length;
   const totalStockCount = products.reduce((sum, p) => sum + p.stock, 0);
   const totalSalesRevenue = transactions.reduce((sum, tx) => sum + tx.totalAmount, 0);
-  const activeInstallmentCount = transactions.filter((t) => t.status === "CICILAN_BERJALAN").length;
 
   const categories = [
     { id: "ALL", label: "Semua Kategori" },
@@ -1193,7 +1179,6 @@ export const SuperadminCooperativeStoreView: React.FC = () => {
                       <td className="py-3.5 px-4 text-center">
                         <button
                           onClick={() => {
-                            setSelectedTxForDetail(tx);
                             setLastCompletedTx(tx);
                             setShowReceiptModal(true);
                           }}

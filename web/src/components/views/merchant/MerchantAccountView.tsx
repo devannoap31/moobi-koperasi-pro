@@ -2,14 +2,9 @@
 
 import React, { useState } from "react";
 import {
-  UserCheck,
-  ShieldCheck,
   Lock,
   Building2,
-  Calendar,
-  AlertCircle,
   Clock,
-  CheckCircle2,
   XCircle,
   FileText,
   Send,
@@ -19,7 +14,6 @@ import {
   CreditCard,
   User,
   MapPin,
-  Sparkles,
 } from "lucide-react";
 import { useMerchant } from "@/context/MerchantContext";
 import { TenantUpdateRequest } from "@/types";

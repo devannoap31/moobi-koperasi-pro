@@ -1026,7 +1026,6 @@ export function buildSavingsLoansReportConfig(
   period: string = "September 2026"
 ): FormalReportConfig {
   const totalLoanAmount = loans.reduce((sum, l) => sum + (l.amount || 0), 0);
-  const totalMonthlyInterest = loans.reduce((sum, l) => sum + (l.monthlyInterest || 0), 0);
   const totalSimpananWajib = employees.reduce((sum, e) => sum + (e.simpananWajib || 0), 0);
   const totalSimpananSukarela = employees.reduce((sum, e) => sum + (e.simpananSukarela || 0), 0);
 
@@ -1203,7 +1202,7 @@ export function buildEmployeesReportConfig(employees: any[]): FormalReportConfig
 export function buildBankChannelingReportConfig(
   debtors: any[],
   bankStatus: any,
-  drawdowns: any[] = []
+  _drawdowns: any[] = []
 ): FormalReportConfig {
   const totalChanneled = debtors.reduce((sum, d) => sum + (d.loanAmount || 0), 0);
   const totalPrincipalRemain = debtors.reduce((sum, d) => sum + (d.remainingPrincipal || 0), 0);

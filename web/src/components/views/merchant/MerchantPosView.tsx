@@ -18,15 +18,12 @@ import {
   UtensilsCrossed,
   ChevronRight,
   Printer,
-  Sparkles,
   Banknote,
-  Coins,
 } from "lucide-react";
 import { useMerchant } from "@/context/MerchantContext";
 import { sampleEmployees } from "@/data/mockData";
 import {
   CanteenProduct,
-  ProductCategory,
   CanteenOrder,
   CanteenPaymentMethod,
   EmployeeMember,

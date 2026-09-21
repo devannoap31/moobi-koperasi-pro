@@ -1,4 +1,3 @@
-import React from "react";
 import { SuperadminCooperativeStoreView } from "@/components/views/SuperadminCooperativeStoreView";
 import { Metadata } from "next";
 

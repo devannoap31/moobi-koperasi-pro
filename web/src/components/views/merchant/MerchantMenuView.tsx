@@ -8,11 +8,7 @@ import {
   Edit3,
   Trash2,
   X,
-  Package,
   UtensilsCrossed,
-  Layers,
-  AlertTriangle,
-  Check,
 } from "lucide-react";
 import { useMerchant, availableImagePresets } from "@/context/MerchantContext";
 import { CanteenProduct, ProductCategory } from "@/types";

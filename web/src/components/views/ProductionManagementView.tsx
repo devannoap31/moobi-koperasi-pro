@@ -28,6 +28,7 @@ import {
   RecipeIngredient,
   MenuRecipe,
   PurchaseOrder,
+  PurchaseOrderItem,
   RawMaterialPurchase,
   RawMaterialUsageItem,
   RawMaterialUsage,
@@ -80,8 +81,8 @@ export const ProductionManagementView: React.FC<ProductionManagementViewProps> =
   const [suppliers] = useState<Supplier[]>(sampleSuppliers);
   const [rawMaterials, setRawMaterials] = useState<RawMaterial[]>(sampleRawMaterials);
   const [recipes, setRecipes] = useState<MenuRecipe[]>(sampleMenuRecipes);
-  const [purchaseOrders] = useState<PurchaseOrder[]>(samplePurchaseOrders);
-  const [purchases] = useState<RawMaterialPurchase[]>(sampleRawMaterialPurchases);
+  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>(samplePurchaseOrders);
+  const [purchases, setPurchases] = useState<RawMaterialPurchase[]>(sampleRawMaterialPurchases);
   const [usages, setUsages] = useState<RawMaterialUsage[]>(sampleRawMaterialUsages);
   const [stockOpnames, setStockOpnames] = useState<StockOpname[]>(sampleStockOpnames);
   const [mutations, setMutations] = useState<StockMutation[]>(sampleStockMutations);
@@ -98,6 +99,7 @@ export const ProductionManagementView: React.FC<ProductionManagementViewProps> =
   const [showAddMaterialModal, setShowAddMaterialModal] = useState(false);
   const [showCookingSessionModal, setShowCookingSessionModal] = useState(false);
   const [showStockOpnameModal, setShowStockOpnameModal] = useState(false);
+  const [showCreatePoModal, setShowCreatePoModal] = useState(false);
 
   // Selected for Details
   const [viewingPo, setViewingPo] = useState<PurchaseOrder | null>(null);
@@ -544,6 +546,215 @@ export const ProductionManagementView: React.FC<ProductionManagementViewProps> =
     setMutations([...varianceMutations, ...mutations]);
     setShowStockOpnameModal(false);
     showToast(`Berita acara stok opname ${opnameNumber} berhasil disimpan & saldo stok disesuaikan!`, "success");
+  };
+
+  // ----------------------------------------------------
+  // CREATE PURCHASE ORDER (PO) HANDLER & FORM STATE
+  // ----------------------------------------------------
+  interface PoItemForm {
+    id: string;
+    rawMaterialId: string;
+    quantity: number | "";
+    unitPrice: number | "";
+  }
+
+  const [poSupplierId, setPoSupplierId] = useState<string>(sampleSuppliers[0]?.id || "sup-1");
+  const [poOrderDate, setPoOrderDate] = useState<string>("2026-09-21");
+  const [poExpectedDeliveryDate, setPoExpectedDeliveryDate] = useState<string>("2026-09-23");
+  const [poLocation, setPoLocation] = useState<string>("Dapur Kantin Pabrik BIT (Lt. 1)");
+  const [poNotes, setPoNotes] = useState<string>("Mohon dikirim sesuai pesanan dan kondisi bahan segar.");
+  const [poDiscountAmount, setPoDiscountAmount] = useState<number | "">("");
+  const [poShippingCost, setPoShippingCost] = useState<number | "">("");
+
+  const [poItems, setPoItems] = useState<PoItemForm[]>([
+    {
+      id: "po-item-1",
+      rawMaterialId: sampleRawMaterials[0]?.id || "rm-1",
+      quantity: 10,
+      unitPrice: sampleRawMaterials[0]?.lastPurchasePrice || 30000,
+    },
+  ]);
+
+  const handleAddPoItem = () => {
+    const defaultMat = rawMaterials[0];
+    setPoItems((prev) => [
+      ...prev,
+      {
+        id: `po-item-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        rawMaterialId: defaultMat?.id || "",
+        quantity: 1,
+        unitPrice: defaultMat?.lastPurchasePrice || 0,
+      },
+    ]);
+  };
+
+  const handleRemovePoItem = (itemId: string) => {
+    if (poItems.length <= 1) {
+      showToast("Minimal harus ada 1 item bahan dalam Surat PO.", "warning");
+      return;
+    }
+    setPoItems((prev) => prev.filter((item) => item.id !== itemId));
+  };
+
+  const handlePoItemChange = (itemId: string, field: "rawMaterialId" | "quantity" | "unitPrice", value: any) => {
+    setPoItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== itemId) return item;
+        if (field === "rawMaterialId") {
+          const mat = rawMaterials.find((m) => m.id === value);
+          return {
+            ...item,
+            rawMaterialId: value,
+            unitPrice: mat ? mat.lastPurchasePrice : item.unitPrice,
+          };
+        }
+        if (field === "quantity" || field === "unitPrice") {
+          return {
+            ...item,
+            [field]: value === "" ? "" : isNaN(Number(value)) ? "" : Number(value),
+          };
+        }
+        return {
+          ...item,
+          [field]: value,
+        };
+      })
+    );
+  };
+
+  const poCalculations = useMemo(() => {
+    const calculatedItems: PurchaseOrderItem[] = poItems.map((item) => {
+      const mat = rawMaterials.find((m) => m.id === item.rawMaterialId) || rawMaterials[0];
+      const qty = typeof item.quantity === "number" ? item.quantity : (item.quantity === "" ? 0 : Number(item.quantity) || 0);
+      const price = typeof item.unitPrice === "number" ? item.unitPrice : (item.unitPrice === "" ? 0 : Number(item.unitPrice) || 0);
+      const subtotal = Math.max(0, qty * price);
+      return {
+        id: item.id,
+        rawMaterialId: mat ? mat.id : item.rawMaterialId,
+        rawMaterialCode: mat ? mat.code : "BB-XXX",
+        rawMaterialName: mat ? mat.name : "Bahan Baku",
+        categoryName: mat ? mat.categoryName : "Umum",
+        purchaseUnit: mat ? mat.purchaseUnit : "Kg",
+        unitRatio: mat ? mat.unitRatio : 1,
+        unitPrice: price,
+        quantity: qty,
+        discountAmount: 0,
+        subtotal,
+      };
+    });
+
+    const subtotal = calculatedItems.reduce((acc, curr) => acc + curr.subtotal, 0);
+    const disc = typeof poDiscountAmount === "number" ? poDiscountAmount : (Number(poDiscountAmount) || 0);
+    const ship = typeof poShippingCost === "number" ? poShippingCost : (Number(poShippingCost) || 0);
+    const grandTotal = Math.max(0, subtotal - disc + ship);
+
+    return {
+      items: calculatedItems,
+      subtotal,
+      grandTotal,
+    };
+  }, [poItems, rawMaterials, poDiscountAmount, poShippingCost]);
+
+  const handleCreatePurchaseOrder = (e: React.FormEvent) => {
+    e.preventDefault();
+    const sup = suppliers.find((s) => s.id === poSupplierId);
+    if (!sup) {
+      showToast("Pilih supplier rekanan terlebih dahulu!", "warning");
+      return;
+    }
+
+    if (poCalculations.items.length === 0 || poCalculations.items.some((it) => it.quantity <= 0)) {
+      showToast("Pastikan semua item memiliki kuantitas pemesanan minimal 1!", "warning");
+      return;
+    }
+
+    const nextCount = purchaseOrders.length + 1;
+    const now = new Date();
+    const poNumber = `PO-BB/${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, "0")}/${String(nextCount).padStart(3, "0")}`;
+    const disc = typeof poDiscountAmount === "number" ? poDiscountAmount : (Number(poDiscountAmount) || 0);
+    const ship = typeof poShippingCost === "number" ? poShippingCost : (Number(poShippingCost) || 0);
+
+    const newPO: PurchaseOrder = {
+      id: `po-${Date.now()}`,
+      poNumber,
+      orderDate: poOrderDate,
+      expectedDeliveryDate: poExpectedDeliveryDate,
+      supplierId: sup.id,
+      supplierName: sup.name,
+      supplierContact: sup.contactPerson,
+      supplierPhone: sup.phone,
+      supplierAddress: sup.address,
+      location: poLocation,
+      items: poCalculations.items,
+      subtotal: poCalculations.subtotal,
+      discountPercent: 0,
+      discountAmount: disc,
+      shippingAdminCost: ship,
+      grandTotal: poCalculations.grandTotal,
+      status: "SENT",
+      notes: poNotes,
+      createdAt: new Date().toISOString(),
+    };
+
+    setPurchaseOrders([newPO, ...purchaseOrders]);
+    setShowCreatePoModal(false);
+    showToast(`Surat PO ${poNumber} berhasil diterbitkan dan dikirim ke ${sup.name}!`, "success");
+
+    // Reset items for next PO
+    setPoDiscountAmount("");
+    setPoShippingCost("");
+    setPoItems([
+      {
+        id: `po-item-${Date.now()}`,
+        rawMaterialId: rawMaterials[0]?.id || "rm-1",
+        quantity: 10,
+        unitPrice: rawMaterials[0]?.lastPurchasePrice || 30000,
+      },
+    ]);
+  };
+
+  const handleExportPoReport = (po: PurchaseOrder) => {
+    const config: FormalReportConfig = {
+      title: "SURAT PESANAN PENGADAAN BAHAN BAKU (PURCHASE ORDER)",
+      documentNumber: po.poNumber,
+      period: `Tanggal PO: ${po.orderDate} | Estimasi Kirim: ${po.expectedDeliveryDate}`,
+      date: new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }),
+      departmentOrUnit: `Kantin BIT - Rekanan: ${po.supplierName}`,
+      filename: `${po.poNumber.replace(/\//g, "-")}-${po.supplierName.replace(/\s+/g, "_")}`,
+      orientation: "portrait",
+      columns: [
+        { header: "No", key: "no", width: "8%" },
+        { header: "Kode", key: "code", width: "16%" },
+        { header: "Nama Bahan Baku", key: "name", width: "32%" },
+        { header: "Qty", key: "qty", align: "center", width: "12%" },
+        { header: "Satuan", key: "unit", align: "center", width: "12%" },
+        { header: "Harga Satuan", key: "unitPrice", align: "right", width: "20%" },
+        { header: "Subtotal", key: "subtotal", align: "right", width: "20%" },
+      ],
+      data: po.items.map((it, idx) => ({
+        no: idx + 1,
+        code: it.rawMaterialCode,
+        name: it.rawMaterialName,
+        qty: it.quantity,
+        unit: it.purchaseUnit,
+        unitPrice: `Rp ${it.unitPrice.toLocaleString("id-ID")}`,
+        subtotal: `Rp ${it.subtotal.toLocaleString("id-ID")}`,
+      })),
+      summaries: [
+        { label: "Nomor PO", value: po.poNumber },
+        { label: "Mitra Supplier", value: po.supplierName },
+        { label: "Status Dokumen", value: po.status },
+        { label: "Grand Total PO", value: `Rp ${po.grandTotal.toLocaleString("id-ID")}` },
+      ],
+      signatures: [
+        { role: "Dibuat Oleh (Admin Dapur)", name: "Chef Dapur Kantin BIT" },
+        { role: "Disetujui Oleh (Manajer Koperasi)", name: "Bpk. Rahmat Hidayat, SE" },
+        { role: "Diterima Oleh (Mitra Supplier)", name: po.supplierContact || po.supplierName },
+      ],
+    };
+
+    setReportConfig(config);
+    setIsReportModalOpen(true);
   };
 
   // ----------------------------------------------------
@@ -1226,7 +1437,7 @@ export const ProductionManagementView: React.FC<ProductionManagementViewProps> =
                 </p>
               </div>
               <button
-                onClick={() => showToast("Form pembuatan Surat PO Baru ke Supplier siap diproses.", "info")}
+                onClick={() => setShowCreatePoModal(true)}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#4A3AFF] hover:bg-[#3D2EE0] text-white text-xs font-bold shadow-sm shadow-[#4A3AFF]/20 transition-all cursor-pointer shrink-0"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -1285,6 +1496,13 @@ export const ProductionManagementView: React.FC<ProductionManagementViewProps> =
                             title="Lihat Rincian Item PO"
                           >
                             <Eye className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleExportPoReport(po)}
+                            className="p-1.5 rounded-full bg-[#EBF7FC] hover:bg-[#0090D0] hover:text-white text-[#0090D0] transition-colors cursor-pointer"
+                            title="Cetak Surat PO Resmi (PDF)"
+                          >
+                            <Printer className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </td>
@@ -1828,8 +2046,9 @@ export const ProductionManagementView: React.FC<ProductionManagementViewProps> =
                     <input
                       type="number"
                       min="1"
-                      value={newMatUnitRatio}
-                      onChange={(e) => setNewMatUnitRatio(parseInt(e.target.value) || 1)}
+                      value={newMatUnitRatio || ""}
+                      onChange={(e) => setNewMatUnitRatio(e.target.value === "" ? 0 : parseInt(e.target.value) || 0)}
+                      onFocus={(e) => e.target.select()}
                       className="w-full px-3 py-2 rounded-[10px] border border-[#E6E3F7] bg-white text-xs text-[#1C1B3A]"
                     />
                   </div>
@@ -1854,8 +2073,9 @@ export const ProductionManagementView: React.FC<ProductionManagementViewProps> =
                     <input
                       type="number"
                       min="0"
-                      value={newMatLastPurchasePrice}
-                      onChange={(e) => setNewMatLastPurchasePrice(parseInt(e.target.value) || 0)}
+                      value={newMatLastPurchasePrice || ""}
+                      onChange={(e) => setNewMatLastPurchasePrice(e.target.value === "" ? 0 : parseInt(e.target.value) || 0)}
+                      onFocus={(e) => e.target.select()}
                       className="w-full px-3 py-2 rounded-[10px] border border-[#E6E3F7] bg-white text-xs text-[#1C1B3A] font-bold"
                     />
                   </div>
@@ -1878,8 +2098,9 @@ export const ProductionManagementView: React.FC<ProductionManagementViewProps> =
                   <input
                     type="number"
                     min="0"
-                    value={newMatMinStock}
-                    onChange={(e) => setNewMatMinStock(parseInt(e.target.value) || 0)}
+                    value={newMatMinStock || ""}
+                    onChange={(e) => setNewMatMinStock(e.target.value === "" ? 0 : parseInt(e.target.value) || 0)}
+                    onFocus={(e) => e.target.select()}
                     className="w-full px-3.5 py-2.5 rounded-[12px] border border-[#E6E3F7] text-xs text-[#1C1B3A]"
                   />
                 </div>
@@ -1891,8 +2112,9 @@ export const ProductionManagementView: React.FC<ProductionManagementViewProps> =
                   <input
                     type="number"
                     min="0"
-                    value={newMatInitialStock}
-                    onChange={(e) => setNewMatInitialStock(parseInt(e.target.value) || 0)}
+                    value={newMatInitialStock || ""}
+                    onChange={(e) => setNewMatInitialStock(e.target.value === "" ? 0 : parseInt(e.target.value) || 0)}
+                    onFocus={(e) => e.target.select()}
                     className="w-full px-3.5 py-2.5 rounded-[12px] border border-[#E6E3F7] text-xs text-[#1C1B3A]"
                   />
                 </div>
@@ -1970,7 +2192,8 @@ export const ProductionManagementView: React.FC<ProductionManagementViewProps> =
                     type="number"
                     min="1"
                     value={cookPortionCount}
-                    onChange={(e) => setCookPortionCount(parseInt(e.target.value) || 1)}
+                    onChange={(e) => setCookPortionCount(e.target.value === "" ? 1 : parseInt(e.target.value) || 1)}
+                    onFocus={(e) => e.target.select()}
                     className="w-full px-3 py-2 rounded-[10px] border border-[#E6E3F7] text-xs font-extrabold text-[#4A3AFF] focus:outline-none focus:border-[#4A3AFF]"
                   />
                 </div>
@@ -2182,12 +2405,13 @@ export const ProductionManagementView: React.FC<ProductionManagementViewProps> =
                                 min="0"
                                 value={physical}
                                 onChange={(e) => {
-                                  const val = parseFloat(e.target.value) || 0;
+                                  const val = e.target.value === "" ? 0 : parseFloat(e.target.value) || 0;
                                   setOpnamePhysicalInputs({
                                     ...opnamePhysicalInputs,
                                     [mat.id]: val,
                                   });
                                 }}
+                                onFocus={(e) => e.target.select()}
                                 className="w-24 px-2 py-1.5 rounded-[8px] border border-[#E6E3F7] text-center font-extrabold text-[#1C1B3A] text-xs focus:outline-none focus:border-[#4A3AFF]"
                               />
                               <span className="text-[10px] text-[#6F6B88]">{mat.usageUnit}</span>
@@ -2314,7 +2538,14 @@ export const ProductionManagementView: React.FC<ProductionManagementViewProps> =
               </div>
             </div>
 
-            <div className="p-4 border-t border-[#E6E3F7] flex items-center justify-end">
+            <div className="p-4 border-t border-[#E6E3F7] flex items-center justify-between">
+              <button
+                onClick={() => handleExportPoReport(viewingPo)}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#EBF7FC] hover:bg-[#0090D0] hover:text-white text-[#0090D0] text-xs font-bold transition-colors cursor-pointer"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                <span>Cetak Surat PO Resmi (PDF)</span>
+              </button>
               <button
                 onClick={() => setViewingPo(null)}
                 className="px-6 py-2 rounded-full bg-[#1C1B3A] text-white text-xs font-bold cursor-pointer"
@@ -2322,6 +2553,299 @@ export const ProductionManagementView: React.FC<ProductionManagementViewProps> =
                 Tutup
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 5: CREATE PURCHASE ORDER (SURAT PO BARU)                             */}
+      {/* ========================================================================= */}
+      {showCreatePoModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-[24px] border border-[#E6E3F7] w-full max-w-4xl overflow-hidden shadow-2xl animate-fadeIn flex flex-col max-h-[94vh]">
+            {/* Modal Header */}
+            <div className="p-5 border-b border-[#E6E3F7] flex items-center justify-between bg-[#F8F7FD]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-full bg-[#4A3AFF] text-white flex items-center justify-center font-bold">
+                  <Plus className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-sm sm:text-base text-[#1C1B3A]">
+                    Buat Surat Pesanan Bahan Baku (Purchase Order) Baru
+                  </h3>
+                  <p className="text-[11px] text-[#6F6B88]">
+                    Terbitkan Surat PO resmi untuk pengadaan bahan baku ke mitra vendor supplier.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowCreatePoModal(false)}
+                className="p-1.5 rounded-full hover:bg-gray-200 text-gray-500 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body / Form */}
+            <form onSubmit={handleCreatePurchaseOrder} className="flex flex-col flex-1 overflow-hidden">
+              <div className="p-6 space-y-5 overflow-y-auto flex-1">
+                {/* 1. Supplier & Delivery Information */}
+                <div className="bg-[#F8F7FD] p-4 rounded-[16px] border border-[#E6E3F7] space-y-3">
+                  <h4 className="text-xs font-extrabold text-[#1C1B3A] flex items-center gap-1.5">
+                    <Factory className="w-3.5 h-3.5 text-[#4A3AFF]" />
+                    <span>Informasi Mitra Supplier &amp; Pengiriman</span>
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div className="space-y-1 sm:col-span-2">
+                      <label className="text-[11px] font-bold text-[#1C1B3A]">Pilih Supplier Rekanan *</label>
+                      <select
+                        value={poSupplierId}
+                        onChange={(e) => setPoSupplierId(e.target.value)}
+                        className="w-full px-3 py-2 rounded-[10px] border border-[#E6E3F7] bg-white text-xs font-bold text-[#1C1B3A] focus:outline-none focus:border-[#4A3AFF]"
+                      >
+                        {suppliers.map((sup) => (
+                          <option key={sup.id} value={sup.id}>
+                            {sup.name} ({sup.supplierType} &bull; {sup.city})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-[#1C1B3A]">Tanggal Terbit PO</label>
+                      <input
+                        type="date"
+                        value={poOrderDate}
+                        onChange={(e) => setPoOrderDate(e.target.value)}
+                        className="w-full px-3 py-2 rounded-[10px] border border-[#E6E3F7] bg-white text-xs text-[#1C1B3A] focus:outline-none focus:border-[#4A3AFF]"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-[#1C1B3A]">Estimasi Tiba (Delivery)</label>
+                      <input
+                        type="date"
+                        value={poExpectedDeliveryDate}
+                        onChange={(e) => setPoExpectedDeliveryDate(e.target.value)}
+                        className="w-full px-3 py-2 rounded-[10px] border border-[#E6E3F7] bg-white text-xs text-[#1C1B3A] focus:outline-none focus:border-[#4A3AFF]"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-[#1C1B3A]">Lokasi Tujuan Penerimaan</label>
+                      <input
+                        type="text"
+                        value={poLocation}
+                        onChange={(e) => setPoLocation(e.target.value)}
+                        className="w-full px-3 py-2 rounded-[10px] border border-[#E6E3F7] bg-white text-xs text-[#1C1B3A] focus:outline-none focus:border-[#4A3AFF]"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-[#1C1B3A]">Catatan Instruksi untuk Vendor</label>
+                      <input
+                        type="text"
+                        placeholder="Contoh: Kirim pagi hari sebelum jam 08:00 WIB"
+                        value={poNotes}
+                        onChange={(e) => setPoNotes(e.target.value)}
+                        className="w-full px-3 py-2 rounded-[10px] border border-[#E6E3F7] bg-white text-xs text-[#1C1B3A] focus:outline-none focus:border-[#4A3AFF]"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Order Items List */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-xs font-extrabold text-[#1C1B3A] flex items-center gap-1.5">
+                        <Boxes className="w-3.5 h-3.5 text-[#4A3AFF]" />
+                        <span>Daftar Item Bahan Baku yang Dipesan ({poItems.length} Macam Bahan)</span>
+                      </h4>
+                      <p className="text-[10.5px] text-[#6F6B88]">
+                        Pilih bahan baku dari katalog, masukkan kuantitas dan harga satuan kesepakatan PO.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAddPoItem}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#F5F3FF] hover:bg-[#4A3AFF] hover:text-white text-[#4A3AFF] text-xs font-bold border border-[#E6E3F7] transition-all cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Tambah Baris Bahan</span>
+                    </button>
+                  </div>
+
+                  <div className="overflow-x-auto border border-[#E6E3F7] rounded-[16px]">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-[#F8F7FD] border-b border-[#E6E3F7] text-[#6F6B88] font-bold">
+                          <th className="py-2.5 px-3">Bahan Baku</th>
+                          <th className="py-2.5 px-3 text-center">Satuan Beli</th>
+                          <th className="py-2.5 px-3 text-center w-28">Kuantitas</th>
+                          <th className="py-2.5 px-3 text-right w-36">Harga Satuan (Rp)</th>
+                          <th className="py-2.5 px-3 text-right">Subtotal (Rp)</th>
+                          <th className="py-2.5 px-3 text-center w-12">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#E6E3F7]/60">
+                        {poItems.map((item) => {
+                          const mat = rawMaterials.find((m) => m.id === item.rawMaterialId) || rawMaterials[0];
+                          const subtotal = (item.quantity || 0) * (item.unitPrice || 0);
+
+                          return (
+                            <tr key={item.id} className="hover:bg-[#F5F3FF]/30">
+                              <td className="py-2.5 px-3">
+                                <select
+                                  value={item.rawMaterialId}
+                                  onChange={(e) => handlePoItemChange(item.id, "rawMaterialId", e.target.value)}
+                                  className="w-full px-2.5 py-1.5 rounded-[8px] border border-[#E6E3F7] bg-white text-xs font-bold text-[#1C1B3A] focus:outline-none focus:border-[#4A3AFF]"
+                                >
+                                  {rawMaterials.map((rm) => (
+                                    <option key={rm.id} value={rm.id}>
+                                      [{rm.code}] {rm.name} ({rm.categoryName})
+                                    </option>
+                                  ))}
+                                </select>
+                              </td>
+                              <td className="py-2.5 px-3 text-center">
+                                <span className="inline-block px-2 py-0.5 rounded-full bg-[#EBF7FC] text-[#0090D0] text-[10px] font-bold">
+                                  {mat?.purchaseUnit || "Kg"}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3 text-center">
+                                <input
+                                  type="number"
+                                  min="1"
+                                  placeholder="1"
+                                  value={item.quantity}
+                                  onChange={(e) =>
+                                    handlePoItemChange(item.id, "quantity", e.target.value)
+                                  }
+                                  onFocus={(e) => e.target.select()}
+                                  className="w-full px-2 py-1.5 rounded-[8px] border border-[#E6E3F7] text-center font-extrabold text-[#4A3AFF] text-xs focus:outline-none focus:border-[#4A3AFF]"
+                                  required
+                                />
+                              </td>
+                              <td className="py-2.5 px-3 text-right">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="500"
+                                  placeholder="0"
+                                  value={item.unitPrice}
+                                  onChange={(e) =>
+                                    handlePoItemChange(item.id, "unitPrice", e.target.value)
+                                  }
+                                  onFocus={(e) => e.target.select()}
+                                  className="w-full px-2 py-1.5 rounded-[8px] border border-[#E6E3F7] text-right font-bold text-[#1C1B3A] text-xs focus:outline-none focus:border-[#4A3AFF]"
+                                  required
+                                />
+                              </td>
+                              <td className="py-2.5 px-3 text-right font-extrabold text-[#1C1B3A]">
+                                Rp {subtotal.toLocaleString("id-ID")}
+                              </td>
+                              <td className="py-2.5 px-3 text-center">
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemovePoItem(item.id)}
+                                  disabled={poItems.length <= 1}
+                                  className="p-1.5 rounded-full text-red-500 hover:bg-red-50 disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer"
+                                  title="Hapus Baris"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* 3. Cost Summary & Grand Total */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                  <div className="space-y-3 bg-[#F8F7FD] p-4 rounded-[16px] border border-[#E6E3F7]">
+                    <h4 className="text-xs font-extrabold text-[#1C1B3A]">Penyesuaian Biaya (Opsional)</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-[#1C1B3A]">Diskon Khusus Vendor (Rp)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="0"
+                          value={poDiscountAmount}
+                          onChange={(e) => setPoDiscountAmount(e.target.value === "" ? "" : parseFloat(e.target.value))}
+                          onFocus={(e) => e.target.select()}
+                          className="w-full px-3 py-2 rounded-[10px] border border-[#E6E3F7] bg-white text-xs font-bold text-[#1C1B3A]"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-[#1C1B3A]">Ongkos Kirim / Kurir (Rp)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="0"
+                          value={poShippingCost}
+                          onChange={(e) => setPoShippingCost(e.target.value === "" ? "" : parseFloat(e.target.value))}
+                          onFocus={(e) => e.target.select()}
+                          className="w-full px-3 py-2 rounded-[10px] border border-[#E6E3F7] bg-white text-xs font-bold text-[#1C1B3A]"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-[#1C1B3A] text-white p-5 rounded-[16px] flex flex-col justify-between shadow-lg">
+                    <div className="space-y-1.5 text-xs">
+                      <div className="flex items-center justify-between text-white/70">
+                        <span>Subtotal ({poItems.length} macam item):</span>
+                        <span className="font-mono">Rp {poCalculations.subtotal.toLocaleString("id-ID")}</span>
+                      </div>
+                      {Number(poDiscountAmount) > 0 && (
+                        <div className="flex items-center justify-between text-emerald-400">
+                          <span>Diskon Vendor:</span>
+                          <span className="font-mono">- Rp {Number(poDiscountAmount).toLocaleString("id-ID")}</span>
+                        </div>
+                      )}
+                      {Number(poShippingCost) > 0 && (
+                        <div className="flex items-center justify-between text-amber-300">
+                          <span>Ongkir / Ekspedisi:</span>
+                          <span className="font-mono">+ Rp {Number(poShippingCost).toLocaleString("id-ID")}</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="pt-3 border-t border-white/20 flex items-baseline justify-between">
+                      <span className="text-xs font-bold text-white/80">TOTAL SURAT PO:</span>
+                      <span className="text-xl sm:text-2xl font-black text-[#FFB547]">
+                        Rp {poCalculations.grandTotal.toLocaleString("id-ID")}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-4 border-t border-[#E6E3F7] flex items-center justify-end gap-2.5 bg-white">
+                <button
+                  type="button"
+                  onClick={() => setShowCreatePoModal(false)}
+                  className="px-5 py-2.5 rounded-full border border-[#E6E3F7] text-xs font-bold text-[#6F6B88] hover:bg-gray-100 cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 rounded-full bg-[#4A3AFF] hover:bg-[#3D2EE0] text-white text-xs font-bold shadow-md shadow-[#4A3AFF]/20 cursor-pointer flex items-center gap-2"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Terbitkan &amp; Kirim Surat PO</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -32,7 +32,9 @@ export default function ProductionLayout({
 
             {/* Scrollable Page Content */}
             <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
-              {children}
+              <React.Suspense fallback={<div className="p-8 text-xs text-[#6F6B88]">Memuat modul produksi...</div>}>
+                {children}
+              </React.Suspense>
             </main>
           </div>
         </div>

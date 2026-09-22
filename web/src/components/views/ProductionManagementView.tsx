@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   Factory,
   ChefHat,
@@ -20,6 +22,11 @@ import {
   Eye,
   Percent,
   Boxes,
+  Truck,
+  FileCheck,
+  Pencil,
+  Tag,
+  Building2,
 } from "lucide-react";
 import {
   RawMaterialCategory,
@@ -30,6 +37,7 @@ import {
   PurchaseOrder,
   PurchaseOrderItem,
   RawMaterialPurchase,
+  RawMaterialPurchaseItem,
   RawMaterialUsageItem,
   RawMaterialUsage,
   StockOpnameItem,
@@ -49,6 +57,202 @@ import {
 } from "@/data/mockData";
 import { ReportExportModal } from "@/components/common/ReportExportModal";
 import { FormalReportConfig } from "@/utils/reportExporter";
+
+// ----------------------------------------------------
+// SEARCHABLE RAW MATERIAL COMBOBOX WITH DEBOUNCE
+// ----------------------------------------------------
+interface PurchaseMaterialComboboxProps {
+  value: string;
+  rawMaterials: RawMaterial[];
+  onSelect: (mat: RawMaterial) => void;
+  placeholder?: string;
+}
+
+const PurchaseMaterialCombobox: React.FC<PurchaseMaterialComboboxProps> = ({
+  value,
+  rawMaterials,
+  onSelect,
+  placeholder = "Ketik kode / nama bahan baku...",
+}) => {
+  const currentMat = useMemo(
+    () => rawMaterials.find((m) => m.id === value),
+    [rawMaterials, value]
+  );
+
+  const [searchQuery, setSearchQuery] = useState<string>(
+    currentMat ? `[${currentMat.code}] ${currentMat.name}` : ""
+  );
+  const [debouncedQuery, setDebouncedQuery] = useState<string>("");
+  const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  // Sync display text when value changes from outside (e.g. initial load, PO auto-fill)
+  React.useEffect(() => {
+    if (currentMat) {
+      setSearchQuery(`[${currentMat.code}] ${currentMat.name}`);
+    } else {
+      setSearchQuery("");
+    }
+  }, [currentMat]);
+
+  // Debounce (200ms)
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+      setHighlightedIndex(-1);
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Click outside to close dropdown
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+        if (currentMat) {
+          setSearchQuery(`[${currentMat.code}] ${currentMat.name}`);
+        }
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [currentMat]);
+
+  // Filter suggestions
+  const filteredSuggestions = useMemo(() => {
+    const q = debouncedQuery.trim().toLowerCase();
+    if (!q) {
+      return rawMaterials.slice(0, 15);
+    }
+    // Check if query exactly equals current formatted tag
+    if (currentMat && `[${currentMat.code.toLowerCase()}] ${currentMat.name.toLowerCase()}` === q) {
+      return rawMaterials.slice(0, 15);
+    }
+
+    return rawMaterials.filter((m) => {
+      const matchName = m.name.toLowerCase().includes(q);
+      const matchCode = m.code.toLowerCase().includes(q);
+      const matchCat = m.categoryName.toLowerCase().includes(q);
+      const matchBarcode = m.barcode ? m.barcode.toLowerCase().includes(q) : false;
+      const fullTag = `[${m.code.toLowerCase()}] ${m.name.toLowerCase()}`;
+      return matchName || matchCode || matchCat || matchBarcode || fullTag.includes(q);
+    });
+  }, [rawMaterials, debouncedQuery, currentMat]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!isOpen) {
+      if (e.key === "ArrowDown" || e.key === "Enter") {
+        setIsOpen(true);
+      }
+      return;
+    }
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlightedIndex((prev) =>
+        prev < filteredSuggestions.length - 1 ? prev + 1 : 0
+      );
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlightedIndex((prev) =>
+        prev > 0 ? prev - 1 : filteredSuggestions.length - 1
+      );
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (highlightedIndex >= 0 && filteredSuggestions[highlightedIndex]) {
+        const selected = filteredSuggestions[highlightedIndex];
+        onSelect(selected);
+        setSearchQuery(`[${selected.code}] ${selected.name}`);
+        setIsOpen(false);
+      }
+    } else if (e.key === "Escape") {
+      setIsOpen(false);
+      if (currentMat) {
+        setSearchQuery(`[${currentMat.code}] ${currentMat.name}`);
+      }
+    }
+  };
+
+  return (
+    <div ref={containerRef} className="relative w-full">
+      <div className="relative flex items-center">
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            setIsOpen(true);
+          }}
+          onFocus={(e) => {
+            setIsOpen(true);
+            e.target.select();
+          }}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
+          className="w-full pl-2.5 pr-7 py-1.5 rounded-[8px] border border-[#E6E3F7] bg-white text-xs font-bold text-[#1C1B3A] focus:outline-none focus:border-[#4A3AFF] focus:ring-1 focus:ring-[#4A3AFF]/30"
+        />
+        <Search className="w-3.5 h-3.5 absolute right-2.5 text-[#6F6B88] pointer-events-none" />
+      </div>
+
+      {isOpen && (
+        <div className="absolute left-0 top-full mt-1 w-full min-w-[280px] sm:min-w-[340px] bg-white rounded-[12px] border border-[#E6E3F7] shadow-2xl z-50 max-h-56 overflow-y-auto divide-y divide-[#E6E3F7]/50 animate-fadeIn">
+          {filteredSuggestions.length === 0 ? (
+            <div className="p-3 text-center text-xs text-[#6F6B88]">
+              Tidak ada bahan &quot;{debouncedQuery}&quot; ditemukan.
+            </div>
+          ) : (
+            filteredSuggestions.map((mat, idx) => {
+              const isSelected = mat.id === value;
+              const isHighlighted = idx === highlightedIndex;
+
+              return (
+                <button
+                  key={mat.id}
+                  type="button"
+                  onClick={() => {
+                    onSelect(mat);
+                    setSearchQuery(`[${mat.code}] ${mat.name}`);
+                    setIsOpen(false);
+                  }}
+                  onMouseEnter={() => setHighlightedIndex(idx)}
+                  className={`w-full text-left px-3 py-2 text-xs transition-colors cursor-pointer flex items-center justify-between gap-2 ${
+                    isHighlighted
+                      ? "bg-[#F5F3FF] text-[#4A3AFF]"
+                      : isSelected
+                      ? "bg-[#F8F7FD] font-bold text-[#4A3AFF]"
+                      : "hover:bg-[#F8F7FD] text-[#1C1B3A]"
+                  }`}
+                >
+                  <div className="space-y-0.5 overflow-hidden">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono font-bold text-[10px] text-[#4A3AFF] bg-[#F5F3FF] px-1 py-0.2 rounded">
+                        {mat.code}
+                      </span>
+                      <span className="font-bold truncate text-[11.5px]">{mat.name}</span>
+                    </div>
+                    <p className="text-[10px] text-[#6F6B88]">
+                      {mat.categoryName} &bull; 1 {mat.purchaseUnit} = {mat.unitRatio} {mat.usageUnit}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-[10.5px] font-extrabold text-[#1C1B3A]">
+                      Rp {mat.lastPurchasePrice.toLocaleString("id-ID")}
+                    </p>
+                    <p className="text-[9.5px] text-[#6F6B88]">/{mat.purchaseUnit}</p>
+                  </div>
+                </button>
+              );
+            })
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export type ProductionTab =
   | "RECIPES"
@@ -77,8 +281,8 @@ export const ProductionManagementView: React.FC<ProductionManagementViewProps> =
   }, [initialTab]);
 
   // Main Datasets (Interactive local state)
-  const [categories] = useState<RawMaterialCategory[]>(sampleRawMaterialCategories);
-  const [suppliers] = useState<Supplier[]>(sampleSuppliers);
+  const [categories, setCategories] = useState<RawMaterialCategory[]>(sampleRawMaterialCategories);
+  const [suppliers, setSuppliers] = useState<Supplier[]>(sampleSuppliers);
   const [rawMaterials, setRawMaterials] = useState<RawMaterial[]>(sampleRawMaterials);
   const [recipes, setRecipes] = useState<MenuRecipe[]>(sampleMenuRecipes);
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>(samplePurchaseOrders);
@@ -100,10 +304,24 @@ export const ProductionManagementView: React.FC<ProductionManagementViewProps> =
   const [showCookingSessionModal, setShowCookingSessionModal] = useState(false);
   const [showStockOpnameModal, setShowStockOpnameModal] = useState(false);
   const [showCreatePoModal, setShowCreatePoModal] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<RawMaterialCategory | null>(null);
+  const [showSupplierModal, setShowSupplierModal] = useState(false);
+  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
 
   // Selected for Details
+  const searchParams = useSearchParams();
+  const materialParam = searchParams.get("materialId");
   const [viewingPo, setViewingPo] = useState<PurchaseOrder | null>(null);
-  const [selectedMutationMaterialId, setSelectedMutationMaterialId] = useState<string>("BB-006");
+  const [selectedMutationMaterialId, setSelectedMutationMaterialId] = useState<string>(
+    materialParam || "ALL"
+  );
+
+  React.useEffect(() => {
+    if (materialParam) {
+      setSelectedMutationMaterialId(materialParam);
+    }
+  }, [materialParam]);
 
   // Report Export State
   const [reportConfig, setReportConfig] = useState<FormalReportConfig | null>(null);
@@ -157,10 +375,65 @@ export const ProductionManagementView: React.FC<ProductionManagementViewProps> =
   }, [rawMaterials, rawMaterialSearch, rawMaterialCatFilter, rawMaterialStockFilter]);
 
   // ----------------------------------------------------
-  // RECIPE EDITING HANDLERS
+  // RECIPE EDITING HANDLERS & DEBOUNCED SEARCH
   // ----------------------------------------------------
   const [newIngredientMatId, setNewIngredientMatId] = useState("");
   const [newIngredientAmount, setNewIngredientAmount] = useState<number>(10);
+  const [ingredientSearchQuery, setIngredientSearchQuery] = useState("");
+  const [debouncedIngredientQuery, setDebouncedIngredientQuery] = useState("");
+  const [isIngredientSearchOpen, setIsIngredientSearchOpen] = useState(false);
+  const [highlightedIngredientIndex, setHighlightedIngredientIndex] = useState<number>(-1);
+  const ingredientSearchRef = React.useRef<HTMLDivElement>(null);
+
+  // Debounce handler (200ms)
+  React.useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedIngredientQuery(ingredientSearchQuery);
+      setHighlightedIngredientIndex(-1);
+    }, 200);
+    return () => clearTimeout(handler);
+  }, [ingredientSearchQuery]);
+
+  // Click outside to close suggestion dropdown
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        ingredientSearchRef.current &&
+        !ingredientSearchRef.current.contains(event.target as Node)
+      ) {
+        setIsIngredientSearchOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredIngredientSuggestions = useMemo(() => {
+    const q = debouncedIngredientQuery.trim().toLowerCase();
+    if (!q) {
+      return rawMaterials.slice(0, 10);
+    }
+    return rawMaterials.filter(
+      (m) =>
+        m.name.toLowerCase().includes(q) ||
+        m.code.toLowerCase().includes(q) ||
+        m.categoryName.toLowerCase().includes(q)
+    );
+  }, [rawMaterials, debouncedIngredientQuery]);
+
+  const selectedIngredientMaterial = useMemo(() => {
+    return rawMaterials.find((m) => m.id === newIngredientMatId);
+  }, [rawMaterials, newIngredientMatId]);
+
+  const handleSelectIngredientFromSearch = (mat: RawMaterial) => {
+    if (activeRecipe.ingredients.some((i) => i.rawMaterialId === mat.id)) {
+      showToast(`Bahan ${mat.name} sudah ada dalam komposisi resep ini!`, "warning");
+      return;
+    }
+    setNewIngredientMatId(mat.id);
+    setIngredientSearchQuery(`[${mat.code}] ${mat.name}`);
+    setIsIngredientSearchOpen(false);
+  };
 
   const handleAddIngredientToRecipe = () => {
     if (!newIngredientMatId || newIngredientAmount <= 0) {
@@ -216,6 +489,7 @@ export const ProductionManagementView: React.FC<ProductionManagementViewProps> =
 
     setRecipes(updatedRecipes);
     setNewIngredientMatId("");
+    setIngredientSearchQuery("");
     setNewIngredientAmount(10);
     showToast(`Bahan ${mat.name} berhasil ditambahkan ke resep ${activeRecipe.menuName}!`, "success");
   };
@@ -306,6 +580,201 @@ export const ProductionManagementView: React.FC<ProductionManagementViewProps> =
     setNewMatName("");
     setNewMatLastPurchasePrice(30000);
     setNewMatInitialStock(5000);
+  };
+
+  // ----------------------------------------------------
+  // CATEGORY CRUD HANDLERS
+  // ----------------------------------------------------
+  const [categoryName, setCategoryName] = useState("");
+  const [categoryCode, setCategoryCode] = useState("");
+  const [categoryInventoryAccount, setCategoryInventoryAccount] = useState("1130207");
+  const [categoryExpenseAccount, setCategoryExpenseAccount] = useState("5110216");
+  const [categoryDescription, setCategoryDescription] = useState("");
+
+  const handleOpenAddCategory = () => {
+    setEditingCategory(null);
+    setCategoryName("");
+    setCategoryCode(`CAT-${String(categories.length + 1).padStart(2, "0")}`);
+    const nextNum = 10 + categories.length;
+    setCategoryInventoryAccount(`11302${nextNum}`);
+    setCategoryExpenseAccount(`51102${nextNum + 5}`);
+    setCategoryDescription("");
+    setShowCategoryModal(true);
+  };
+
+  const handleOpenEditCategory = (cat: RawMaterialCategory) => {
+    setEditingCategory(cat);
+    setCategoryName(cat.name);
+    setCategoryCode(cat.code);
+    setCategoryInventoryAccount(cat.inventoryAccountCode);
+    setCategoryExpenseAccount(cat.expenseAccountCode);
+    setCategoryDescription(cat.description || "");
+    setShowCategoryModal(true);
+  };
+
+  const handleSaveCategory = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!categoryName.trim()) {
+      showToast("Nama kategori bahan wajib diisi!", "warning");
+      return;
+    }
+
+    const code = categoryCode.trim().toUpperCase() || categoryName.trim().toUpperCase().replace(/\s+/g, "_");
+
+    if (editingCategory) {
+      const updated = categories.map((c) =>
+        c.id === editingCategory.id
+          ? {
+              ...c,
+              name: categoryName.trim(),
+              code,
+              inventoryAccountCode: categoryInventoryAccount.trim() || "1130207",
+              expenseAccountCode: categoryExpenseAccount.trim() || "5110216",
+              description: categoryDescription.trim(),
+            }
+          : c
+      );
+      const updatedMaterials = rawMaterials.map((m) =>
+        m.categoryId === editingCategory.id ? { ...m, categoryName: categoryName.trim() } : m
+      );
+      setCategories(updated);
+      setRawMaterials(updatedMaterials);
+      setShowCategoryModal(false);
+      showToast(`Kategori "${categoryName.trim()}" berhasil diperbarui!`, "success");
+    } else {
+      const newCat: RawMaterialCategory = {
+        id: `CAT-${Date.now()}`,
+        code,
+        name: categoryName.trim(),
+        order: categories.length + 1,
+        inventoryAccountCode: categoryInventoryAccount.trim() || "1130207",
+        expenseAccountCode: categoryExpenseAccount.trim() || "5110216",
+        description: categoryDescription.trim() || "Kategori bahan baku dapur",
+      };
+      setCategories([...categories, newCat]);
+      setShowCategoryModal(false);
+      showToast(`Kategori baru "${newCat.name}" berhasil ditambahkan!`, "success");
+    }
+  };
+
+  const handleDeleteCategory = (cat: RawMaterialCategory) => {
+    const linkedCount = rawMaterials.filter((m) => m.categoryId === cat.id).length;
+    if (linkedCount > 0) {
+      showToast(
+        `Kategori "${cat.name}" tidak dapat dihapus karena masih digunakan oleh ${linkedCount} bahan baku!`,
+        "warning"
+      );
+      return;
+    }
+    setCategories(categories.filter((c) => c.id !== cat.id));
+    showToast(`Kategori "${cat.name}" berhasil dihapus.`, "info");
+  };
+
+  // ----------------------------------------------------
+  // SUPPLIER CRUD HANDLERS
+  // ----------------------------------------------------
+  const [supplierCode, setSupplierCode] = useState("");
+  const [supplierName, setSupplierName] = useState("");
+  const [supplierContact, setSupplierContact] = useState("");
+  const [supplierPhone, setSupplierPhone] = useState("");
+  const [supplierAddress, setSupplierAddress] = useState("");
+  const [supplierCity, setSupplierCity] = useState("Jakarta Barat");
+  const [supplierType, setSupplierType] = useState<Supplier["supplierType"]>("DISTRIBUTOR");
+  const [supplierPaymentTermDays, setSupplierPaymentTermDays] = useState<number | "">(14);
+  const [supplierNotes, setSupplierNotes] = useState("");
+
+  const handleOpenAddSupplier = () => {
+    setEditingSupplier(null);
+    setSupplierCode(`SUP-${String(suppliers.length + 1).padStart(2, "0")}`);
+    setSupplierName("");
+    setSupplierContact("");
+    setSupplierPhone("");
+    setSupplierAddress("");
+    setSupplierCity("Jakarta Barat");
+    setSupplierType("DISTRIBUTOR");
+    setSupplierPaymentTermDays(14);
+    setSupplierNotes("");
+    setShowSupplierModal(true);
+  };
+
+  const handleOpenEditSupplier = (sup: Supplier) => {
+    setEditingSupplier(sup);
+    setSupplierCode(sup.code);
+    setSupplierName(sup.name);
+    setSupplierContact(sup.contactPerson);
+    setSupplierPhone(sup.phone);
+    setSupplierAddress(sup.address);
+    setSupplierCity(sup.city);
+    setSupplierType(sup.supplierType);
+    setSupplierPaymentTermDays(sup.paymentTermDays);
+    setSupplierNotes(sup.notes || "");
+    setShowSupplierModal(true);
+  };
+
+  const handleSaveSupplier = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!supplierName.trim()) {
+      showToast("Nama supplier wajib diisi!", "warning");
+      return;
+    }
+
+    const code = supplierCode.trim() || `SUP-${String(suppliers.length + 1).padStart(2, "0")}`;
+    const termDays = typeof supplierPaymentTermDays === "number" ? supplierPaymentTermDays : 0;
+
+    if (editingSupplier) {
+      const updated = suppliers.map((s) =>
+        s.id === editingSupplier.id
+          ? {
+              ...s,
+              code,
+              name: supplierName.trim(),
+              contactPerson: supplierContact.trim() || "-",
+              phone: supplierPhone.trim() || "-",
+              address: supplierAddress.trim() || "-",
+              city: supplierCity.trim() || "Jakarta",
+              supplierType,
+              paymentTermDays: termDays,
+              notes: supplierNotes.trim() || undefined,
+            }
+          : s
+      );
+      const updatedMaterials = rawMaterials.map((m) =>
+        m.supplierId === editingSupplier.id ? { ...m, supplierName: supplierName.trim() } : m
+      );
+      setSuppliers(updated);
+      setRawMaterials(updatedMaterials);
+      setShowSupplierModal(false);
+      showToast(`Mitra supplier "${supplierName.trim()}" berhasil diperbarui!`, "success");
+    } else {
+      const newSup: Supplier = {
+        id: `SUP-${Date.now()}`,
+        code,
+        name: supplierName.trim(),
+        contactPerson: supplierContact.trim() || "-",
+        phone: supplierPhone.trim() || "-",
+        address: supplierAddress.trim() || "-",
+        city: supplierCity.trim() || "Jakarta",
+        supplierType,
+        paymentTermDays: termDays,
+        notes: supplierNotes.trim() || undefined,
+      };
+      setSuppliers([...suppliers, newSup]);
+      setShowSupplierModal(false);
+      showToast(`Mitra supplier baru "${newSup.name}" berhasil didaftarkan!`, "success");
+    }
+  };
+
+  const handleDeleteSupplier = (sup: Supplier) => {
+    const linkedCount = rawMaterials.filter((m) => m.supplierId === sup.id).length;
+    if (linkedCount > 0) {
+      showToast(
+        `Supplier "${sup.name}" tidak dapat dihapus karena menjadi pemasok utama bagi ${linkedCount} bahan baku!`,
+        "warning"
+      );
+      return;
+    }
+    setSuppliers(suppliers.filter((s) => s.id !== sup.id));
+    showToast(`Mitra supplier "${sup.name}" berhasil dihapus.`, "info");
   };
 
   // ----------------------------------------------------
@@ -758,6 +1227,344 @@ export const ProductionManagementView: React.FC<ProductionManagementViewProps> =
   };
 
   // ----------------------------------------------------
+  // CREATE INBOUND PURCHASE INVOICE HANDLER & FORM STATE
+  // ----------------------------------------------------
+  interface PurchaseItemForm {
+    id: string;
+    rawMaterialId: string;
+    quantityReceived: number | "";
+    unitPrice: number | "";
+  }
+
+  const [showCreatePurchaseModal, setShowCreatePurchaseModal] = useState(false);
+  const [viewingPurchase, setViewingPurchase] = useState<RawMaterialPurchase | null>(null);
+
+  const [purchaseSupplierId, setPurchaseSupplierId] = useState<string>(sampleSuppliers[1]?.id || "SUP-02");
+  const [purchasePoNumber, setPurchasePoNumber] = useState<string>("");
+  const [purchaseInvoiceDate, setPurchaseInvoiceDate] = useState<string>("2026-09-21T09:30");
+  const [purchaseVehiclePlate, setPurchaseVehiclePlate] = useState<string>("B 9482 KBC (Mobil Box Pendingin)");
+  const [purchaseLocation, setPurchaseLocation] = useState<string>("Dapur & Gudang Kantin Pabrik BIT (Lt. 1)");
+  const [purchasePaymentType, setPurchasePaymentType] = useState<"TUNAI_KAS_DAPUR" | "TRANSFER_KOPERASI" | "TEMPO_HUTANG">("TUNAI_KAS_DAPUR");
+  const [purchaseCashBook, setPurchaseCashBook] = useState<string>("KAS OPERASIONAL DAPUR KANTIN");
+  const [purchaseNotes, setPurchaseNotes] = useState<string>("Barang diterima lengkap dan fisik segar sesuai standar kitchen.");
+  const [purchaseDiscountAmount, setPurchaseDiscountAmount] = useState<number | "">("");
+  const [purchaseAdminCost, setPurchaseAdminCost] = useState<number | "">("");
+  const [purchaseAmountPaid, setPurchaseAmountPaid] = useState<number | "">("");
+
+  const [purchaseFormItems, setPurchaseFormItems] = useState<PurchaseItemForm[]>([
+    {
+      id: "puri-init-1",
+      rawMaterialId: sampleRawMaterials[0]?.id || "rm-1",
+      quantityReceived: 10,
+      unitPrice: sampleRawMaterials[0]?.lastPurchasePrice || 30000,
+    },
+  ]);
+
+  const handleAddPurchaseFormItem = () => {
+    const defaultMat = rawMaterials[0];
+    setPurchaseFormItems((prev) => [
+      ...prev,
+      {
+        id: `puri-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        rawMaterialId: defaultMat?.id || "",
+        quantityReceived: 1,
+        unitPrice: defaultMat?.lastPurchasePrice || 0,
+      },
+    ]);
+  };
+
+  const handleRemovePurchaseFormItem = (itemId: string) => {
+    if (purchaseFormItems.length <= 1) {
+      showToast("Minimal harus ada 1 item bahan dalam faktur pembelian.", "warning");
+      return;
+    }
+    setPurchaseFormItems((prev) => prev.filter((item) => item.id !== itemId));
+  };
+
+  const handlePurchaseFormItemChange = (
+    itemId: string,
+    field: "rawMaterialId" | "quantityReceived" | "unitPrice",
+    value: any
+  ) => {
+    setPurchaseFormItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== itemId) return item;
+        if (field === "rawMaterialId") {
+          const mat = rawMaterials.find((m) => m.id === value);
+          return {
+            ...item,
+            rawMaterialId: value,
+            unitPrice: mat ? mat.lastPurchasePrice : item.unitPrice,
+          };
+        }
+        if (field === "quantityReceived" || field === "unitPrice") {
+          return {
+            ...item,
+            [field]: value === "" ? "" : isNaN(Number(value)) ? "" : Number(value),
+          };
+        }
+        return {
+          ...item,
+          [field]: value,
+        };
+      })
+    );
+  };
+
+  const handleSelectPoForPurchase = (poNum: string) => {
+    setPurchasePoNumber(poNum);
+    if (!poNum) return;
+    const po = purchaseOrders.find((p) => p.poNumber === poNum);
+    if (po) {
+      if (po.supplierId) {
+        setPurchaseSupplierId(po.supplierId);
+      }
+      if (po.location) {
+        setPurchaseLocation(po.location);
+      }
+      if (po.items && po.items.length > 0) {
+        setPurchaseFormItems(
+          po.items.map((it) => ({
+            id: `puri-${Date.now()}-${it.id}`,
+            rawMaterialId: it.rawMaterialId,
+            quantityReceived: it.quantity,
+            unitPrice: it.unitPrice,
+          }))
+        );
+      }
+      if (po.discountAmount) {
+        setPurchaseDiscountAmount(po.discountAmount);
+      }
+      if (po.shippingAdminCost) {
+        setPurchaseAdminCost(po.shippingAdminCost);
+      }
+    }
+  };
+
+  const handlePaymentTypeChange = (type: "TUNAI_KAS_DAPUR" | "TRANSFER_KOPERASI" | "TEMPO_HUTANG") => {
+    setPurchasePaymentType(type);
+    if (type === "TUNAI_KAS_DAPUR") {
+      setPurchaseCashBook("KAS OPERASIONAL DAPUR KANTIN");
+    } else if (type === "TRANSFER_KOPERASI") {
+      setPurchaseCashBook("KAS UTAMA KOPKAR BIT");
+    } else {
+      setPurchaseCashBook("HUTANG DAGANG SUPPLIER");
+    }
+  };
+
+  const purchaseCalculations = useMemo(() => {
+    const calculatedItems: RawMaterialPurchaseItem[] = purchaseFormItems.map((item) => {
+      const mat = rawMaterials.find((m) => m.id === item.rawMaterialId) || rawMaterials[0];
+      const qty = typeof item.quantityReceived === "number" ? item.quantityReceived : (item.quantityReceived === "" ? 0 : Number(item.quantityReceived) || 0);
+      const price = typeof item.unitPrice === "number" ? item.unitPrice : (item.unitPrice === "" ? 0 : Number(item.unitPrice) || 0);
+      const subtotal = Math.max(0, qty * price);
+      const unitRatio = mat ? mat.unitRatio : 1;
+      const totalStockAdded = Math.round(qty * unitRatio);
+
+      return {
+        id: item.id,
+        rawMaterialId: mat ? mat.id : item.rawMaterialId,
+        rawMaterialCode: mat ? mat.code : "BB-XXX",
+        rawMaterialName: mat ? mat.name : "Bahan Baku",
+        purchaseUnit: mat ? mat.purchaseUnit : "Kg",
+        unitRatio,
+        usageUnit: mat ? mat.usageUnit : "gram",
+        unitPrice: price,
+        quantityReceived: qty,
+        totalStockAdded,
+        subtotal,
+      };
+    });
+
+    const subtotal = calculatedItems.reduce((acc, curr) => acc + curr.subtotal, 0);
+    const disc = typeof purchaseDiscountAmount === "number" ? purchaseDiscountAmount : (Number(purchaseDiscountAmount) || 0);
+    const adm = typeof purchaseAdminCost === "number" ? purchaseAdminCost : (Number(purchaseAdminCost) || 0);
+    const grandTotal = Math.max(0, subtotal - disc + adm);
+
+    let paid = 0;
+    if (purchaseAmountPaid === "") {
+      paid = purchasePaymentType === "TEMPO_HUTANG" ? 0 : grandTotal;
+    } else {
+      paid = typeof purchaseAmountPaid === "number" ? purchaseAmountPaid : (Number(purchaseAmountPaid) || 0);
+    }
+    const amountDue = Math.max(0, grandTotal - paid);
+
+    return {
+      items: calculatedItems,
+      subtotal,
+      grandTotal,
+      paid,
+      amountDue,
+    };
+  }, [purchaseFormItems, rawMaterials, purchaseDiscountAmount, purchaseAdminCost, purchaseAmountPaid, purchasePaymentType]);
+
+  const handleSavePurchaseInvoice = (e: React.FormEvent) => {
+    e.preventDefault();
+    const sup = suppliers.find((s) => s.id === purchaseSupplierId);
+    if (!sup) {
+      showToast("Pilih supplier rekanan terlebih dahulu!", "warning");
+      return;
+    }
+
+    if (purchaseCalculations.items.length === 0 || purchaseCalculations.items.some((it) => it.quantityReceived <= 0)) {
+      showToast("Pastikan semua item memiliki kuantitas penerimaan minimal 1!", "warning");
+      return;
+    }
+
+    const nextCount = purchases.length + 1;
+    const now = new Date();
+    const invoiceNumber = `INV-BB/${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, "0")}/${String(nextCount).padStart(3, "0")}`;
+    const timestamp = `${purchaseInvoiceDate.replace("T", " ")} WIB`;
+    const disc = typeof purchaseDiscountAmount === "number" ? purchaseDiscountAmount : (Number(purchaseDiscountAmount) || 0);
+    const adm = typeof purchaseAdminCost === "number" ? purchaseAdminCost : (Number(purchaseAdminCost) || 0);
+
+    const newPurchase: RawMaterialPurchase = {
+      id: `PUR-${Date.now()}`,
+      invoiceNumber,
+      purchaseDate: timestamp,
+      poNumber: purchasePoNumber ? purchasePoNumber : undefined,
+      supplierId: sup.id,
+      supplierName: sup.name,
+      supplierPhone: sup.phone,
+      vehiclePlateNumber: purchaseVehiclePlate || undefined,
+      location: purchaseLocation,
+      paymentType: purchasePaymentType,
+      cashBook: purchaseCashBook,
+      items: purchaseCalculations.items,
+      subtotal: purchaseCalculations.subtotal,
+      discountAmount: disc,
+      adminCost: adm,
+      grandTotal: purchaseCalculations.grandTotal,
+      amountPaid: purchaseCalculations.paid,
+      amountDue: purchaseCalculations.amountDue,
+      notes: purchaseNotes,
+      createdAt: timestamp,
+    };
+
+    // 1. Auto-increment stock in rawMaterials & update purchase price
+    const updatedMaterials = rawMaterials.map((mat) => {
+      const receivedItem = purchaseCalculations.items.find((it) => it.rawMaterialId === mat.id);
+      if (receivedItem) {
+        const newStock = mat.currentStock + receivedItem.totalStockAdded;
+        const newUnitPrice = receivedItem.unitPrice;
+        const newUsagePrice = Math.round((newUnitPrice / mat.unitRatio) * 100) / 100;
+        return {
+          ...mat,
+          currentStock: newStock,
+          lastPurchasePrice: newUnitPrice,
+          usageUnitPrice: newUsagePrice,
+        };
+      }
+      return mat;
+    });
+
+    // 2. Create Stock Mutations for each received item
+    const newMutations: StockMutation[] = purchaseCalculations.items.map((it) => {
+      const currentMat = rawMaterials.find((m) => m.id === it.rawMaterialId);
+      const prevStock = currentMat ? currentMat.currentStock : 0;
+      const endingStock = prevStock + it.totalStockAdded;
+
+      return {
+        id: `MUT-${Date.now()}-${it.rawMaterialId}`,
+        rawMaterialId: it.rawMaterialId,
+        rawMaterialCode: it.rawMaterialCode,
+        rawMaterialName: it.rawMaterialName,
+        timestamp,
+        referenceNumber: invoiceNumber,
+        mutationType: "PEMBELIAN_MASUK",
+        qtyIn: it.totalStockAdded,
+        qtyOut: 0,
+        endingBalance: endingStock,
+        unit: it.usageUnit,
+        unitPrice: currentMat ? currentMat.usageUnitPrice : (it.unitPrice / it.unitRatio),
+        totalValue: it.subtotal,
+        pic: "Admin Penerimaan Dapur BIT",
+        notes: `Penerimaan Faktur ${invoiceNumber} dari ${sup.name}${purchasePoNumber ? ` (Ref ${purchasePoNumber})` : ""}`,
+      };
+    });
+
+    // 3. Mark referenced PO as RECEIVED if applicable
+    if (purchasePoNumber) {
+      setPurchaseOrders((prev) =>
+        prev.map((po) =>
+          po.poNumber === purchasePoNumber ? { ...po, status: "RECEIVED" } : po
+        )
+      );
+    }
+
+    setPurchases([newPurchase, ...purchases]);
+    setRawMaterials(updatedMaterials);
+    setMutations([...newMutations, ...mutations]);
+    setShowCreatePurchaseModal(false);
+
+    showToast(
+      `Faktur Pembelian ${invoiceNumber} berhasil disimpan! Stok bahan baku otomatis bertambah & dicatat di mutasi.`,
+      "success"
+    );
+
+    // Reset Form
+    setPurchasePoNumber("");
+    setPurchaseDiscountAmount("");
+    setPurchaseAdminCost("");
+    setPurchaseAmountPaid("");
+    setPurchaseFormItems([
+      {
+        id: `puri-${Date.now()}`,
+        rawMaterialId: rawMaterials[0]?.id || "rm-1",
+        quantityReceived: 10,
+        unitPrice: rawMaterials[0]?.lastPurchasePrice || 30000,
+      },
+    ]);
+  };
+
+  const handleExportPurchaseReport = (pur: RawMaterialPurchase) => {
+    const config: FormalReportConfig = {
+      title: "FAKTUR PEMBELIAN & BUKTI PENERIMAAN BAHAN BAKU (GOODS RECEIPT)",
+      documentNumber: pur.invoiceNumber,
+      period: `Waktu Penerimaan: ${pur.purchaseDate} | Ref PO: ${pur.poNumber || "Pembelian Langsung"}`,
+      date: new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }),
+      departmentOrUnit: `Divisi Pengadaan Kantin BIT & Rekanan: ${pur.supplierName}`,
+      filename: `${pur.invoiceNumber.replace(/\//g, "-")}-${pur.supplierName.replace(/\s+/g, "_")}`,
+      orientation: "portrait",
+      columns: [
+        { header: "No", key: "no", width: "6%" },
+        { header: "Kode", key: "code", width: "14%" },
+        { header: "Nama Bahan Baku", key: "name", width: "26%" },
+        { header: "Satuan Beli", key: "unit", align: "center", width: "12%" },
+        { header: "Qty Masuk", key: "qty", align: "center", width: "12%" },
+        { header: "Stok Masuk", key: "stockAdded", align: "center", width: "14%" },
+        { header: "Harga Satuan", key: "unitPrice", align: "right", width: "16%" },
+        { header: "Subtotal", key: "subtotal", align: "right", width: "18%" },
+      ],
+      data: pur.items.map((it, idx) => ({
+        no: idx + 1,
+        code: it.rawMaterialCode,
+        name: it.rawMaterialName,
+        unit: it.purchaseUnit,
+        qty: `${it.quantityReceived} ${it.purchaseUnit}`,
+        stockAdded: `+${it.totalStockAdded.toLocaleString("id-ID")} ${it.usageUnit}`,
+        unitPrice: `Rp ${it.unitPrice.toLocaleString("id-ID")}`,
+        subtotal: `Rp ${it.subtotal.toLocaleString("id-ID")}`,
+      })),
+      summaries: [
+        { label: "Nomor Faktur", value: pur.invoiceNumber },
+        { label: "Mitra Supplier", value: pur.supplierName },
+        { label: "Metode Bayar", value: pur.paymentType === "TUNAI_KAS_DAPUR" ? "Tunai Kas Dapur" : pur.paymentType === "TRANSFER_KOPERASI" ? "Transfer Koperasi" : "Tempo / Hutang" },
+        { label: "Grand Total", value: `Rp ${pur.grandTotal.toLocaleString("id-ID")}` },
+        { label: "Status Bayar", value: pur.amountDue > 0 ? `Sisa Hutang: Rp ${pur.amountDue.toLocaleString("id-ID")}` : "LUNAS", highlight: pur.amountDue === 0 },
+      ],
+      signatures: [
+        { role: "Petugas Penerima (Kitchen BIT)", name: "Staf Penerimaan Dapur BIT" },
+        { role: "Kurir / Pengantar Supplier", name: pur.vehiclePlateNumber || pur.supplierName },
+        { role: "Verifikasi Keuangan Koperasi", name: "Dewi Lestari (Bendahara)" },
+      ],
+    };
+
+    setReportConfig(config);
+    setIsReportModalOpen(true);
+  };
+
+  // ----------------------------------------------------
   // REPORT EXPORT TRIGGERS
   // ----------------------------------------------------
   const handleExportRawMaterialsReport = () => {
@@ -1115,34 +1922,156 @@ export const ProductionManagementView: React.FC<ProductionManagementViewProps> =
                     <span>Tambah Bahan Baku ke Resep Ini</span>
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
-                    <div className="sm:col-span-6 space-y-1">
-                      <label className="text-[11px] font-bold text-[#6F6B88]">Pilih Bahan Baku</label>
-                      <select
-                        value={newIngredientMatId}
-                        onChange={(e) => setNewIngredientMatId(e.target.value)}
-                        className="w-full px-3 py-2 rounded-[10px] border border-[#E6E3F7] bg-white text-xs text-[#1C1B3A] focus:outline-none focus:border-[#4A3AFF]"
-                      >
-                        <option value="">-- Pilih dari Master Bahan Baku --</option>
-                        {rawMaterials.map((m) => (
-                          <option key={m.id} value={m.id}>
-                            [{m.code}] {m.name} (Rp {m.usageUnitPrice}/{m.usageUnit})
-                          </option>
-                        ))}
-                      </select>
+                    {/* Debounced Searchable Combobox for Raw Material Selection */}
+                    <div className="sm:col-span-6 space-y-1 relative" ref={ingredientSearchRef}>
+                      <label className="text-[11px] font-bold text-[#6F6B88] flex items-center justify-between">
+                        <span>Pilih Bahan Baku (Ketik untuk Mencari)</span>
+                        {selectedIngredientMaterial && (
+                          <span className="text-[10px] text-[#4A3AFF] font-extrabold flex items-center gap-1">
+                            <Check className="w-3 h-3" /> Terpilih (Rp {selectedIngredientMaterial.usageUnitPrice}/{selectedIngredientMaterial.usageUnit})
+                          </span>
+                        )}
+                      </label>
+
+                      <div className="relative">
+                        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#6F6B88] pointer-events-none" />
+                        <input
+                          type="text"
+                          placeholder="Ketik nama atau kode bahan (e.g. Beras, Daging, BB-001)..."
+                          value={ingredientSearchQuery}
+                          onChange={(e) => {
+                            setIngredientSearchQuery(e.target.value);
+                            if (!isIngredientSearchOpen) setIsIngredientSearchOpen(true);
+                            if (newIngredientMatId && e.target.value !== `[${selectedIngredientMaterial?.code}] ${selectedIngredientMaterial?.name}`) {
+                              setNewIngredientMatId("");
+                            }
+                          }}
+                          onFocus={() => {
+                            setIsIngredientSearchOpen(true);
+                          }}
+                          onKeyDown={(e) => {
+                            if (!isIngredientSearchOpen) {
+                              if (e.key === "ArrowDown" || e.key === "Enter") {
+                                setIsIngredientSearchOpen(true);
+                              }
+                              return;
+                            }
+                            if (e.key === "ArrowDown") {
+                              e.preventDefault();
+                              setHighlightedIngredientIndex((prev) =>
+                                prev < filteredIngredientSuggestions.length - 1 ? prev + 1 : 0
+                              );
+                            } else if (e.key === "ArrowUp") {
+                              e.preventDefault();
+                              setHighlightedIngredientIndex((prev) =>
+                                prev > 0 ? prev - 1 : filteredIngredientSuggestions.length - 1
+                              );
+                            } else if (e.key === "Enter" && highlightedIngredientIndex >= 0) {
+                              e.preventDefault();
+                              const selected = filteredIngredientSuggestions[highlightedIngredientIndex];
+                              if (selected) {
+                                handleSelectIngredientFromSearch(selected);
+                              }
+                            } else if (e.key === "Escape") {
+                              setIsIngredientSearchOpen(false);
+                            }
+                          }}
+                          className="w-full pl-9 pr-8 py-2 rounded-[10px] border border-[#E6E3F7] bg-white text-xs font-bold text-[#1C1B3A] focus:outline-none focus:border-[#4A3AFF] focus:ring-2 focus:ring-[#4A3AFF]/15 transition-all shadow-xs"
+                        />
+                        {ingredientSearchQuery && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIngredientSearchQuery("");
+                              setNewIngredientMatId("");
+                            }}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 cursor-pointer"
+                            title="Hapus pencarian"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Floating Suggestions Dropdown with Debounce Results */}
+                      {isIngredientSearchOpen && (
+                        <div className="absolute left-0 right-0 top-full mt-1.5 z-40 bg-white border border-[#E6E3F7] rounded-[14px] shadow-2xl overflow-hidden animate-fadeIn max-h-64 overflow-y-auto divide-y divide-[#E6E3F7]/50">
+                          <div className="px-3 py-1.5 bg-[#F8F7FD] border-b border-[#E6E3F7] flex items-center justify-between text-[10.5px] font-bold text-[#6F6B88]">
+                            <span>
+                              {filteredIngredientSuggestions.length > 0
+                                ? `${filteredIngredientSuggestions.length} Pilihan Bahan Baku`
+                                : "Tidak ditemukan"}
+                            </span>
+                            <span className="text-[10px] font-normal text-[#6F6B88]">
+                              {debouncedIngredientQuery ? `Filter: "${debouncedIngredientQuery}"` : "Saran Populer"}
+                            </span>
+                          </div>
+
+                          {filteredIngredientSuggestions.length === 0 ? (
+                            <div className="p-4 text-center text-xs text-[#6F6B88]">
+                              Tidak ada bahan baku yang cocok dengan <strong>&quot;{debouncedIngredientQuery}&quot;</strong>.
+                            </div>
+                          ) : (
+                            filteredIngredientSuggestions.map((m, idx) => {
+                              const isSelected = newIngredientMatId === m.id;
+                              const isHighlighted = highlightedIngredientIndex === idx;
+                              const isAlreadyInRecipe = activeRecipe.ingredients.some((i) => i.rawMaterialId === m.id);
+
+                              return (
+                                <div
+                                  key={m.id}
+                                  onClick={() => handleSelectIngredientFromSearch(m)}
+                                  className={`p-2.5 px-3 flex items-center justify-between transition-colors cursor-pointer ${
+                                    isHighlighted || isSelected
+                                      ? "bg-[#F5F3FF]"
+                                      : "hover:bg-[#F8F7FD]"
+                                  } ${isAlreadyInRecipe ? "opacity-45 bg-gray-50 cursor-not-allowed" : ""}`}
+                                >
+                                  <div className="space-y-0.5">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="font-mono text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-[#EBF7FC] text-[#0090D0]">
+                                        {m.code}
+                                      </span>
+                                      <span className="font-bold text-xs text-[#1C1B3A]">{m.name}</span>
+                                      {isAlreadyInRecipe && (
+                                        <span className="text-[9.5px] font-bold px-1.5 py-0.2 rounded bg-gray-200 text-gray-600">
+                                          Sudah di Resep
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-[10.5px] text-[#6F6B88]">
+                                      Kategori: <span className="font-medium text-[#1C1B3A]">{m.categoryName}</span> &bull; Stok Fisik:{" "}
+                                      <span className="font-bold text-[#1C1B3A]">{m.currentStock.toLocaleString("id-ID")} {m.usageUnit}</span>
+                                    </p>
+                                  </div>
+
+                                  <div className="text-right shrink-0">
+                                    <span className="text-xs font-extrabold text-[#4A3AFF]">
+                                      Rp {m.usageUnitPrice.toLocaleString("id-ID")}
+                                    </span>
+                                    <span className="block text-[10px] text-[#6F6B88]">/{m.usageUnit}</span>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     <div className="sm:col-span-3 space-y-1">
                       <label className="text-[11px] font-bold text-[#6F6B88]">
-                        Takaran / Porsi ({rawMaterials.find((m) => m.id === newIngredientMatId)?.usageUnit || "satuan"})
+                        Takaran / Porsi ({selectedIngredientMaterial?.usageUnit || "satuan"})
                       </label>
                       <input
                         type="number"
                         min="0.1"
                         step="any"
-                        value={newIngredientAmount}
-                        onChange={(e) => setNewIngredientAmount(parseFloat(e.target.value) || 0)}
-                        placeholder="Jumlah takaran"
-                        className="w-full px-3 py-2 rounded-[10px] border border-[#E6E3F7] bg-white text-xs text-[#1C1B3A] focus:outline-none focus:border-[#4A3AFF]"
+                        placeholder="10"
+                        value={newIngredientAmount || ""}
+                        onChange={(e) => setNewIngredientAmount(e.target.value === "" ? 0 : parseFloat(e.target.value) || 0)}
+                        onFocus={(e) => e.target.select()}
+                        className="w-full px-3 py-2 rounded-[10px] border border-[#E6E3F7] bg-white text-xs font-bold text-[#1C1B3A] focus:outline-none focus:border-[#4A3AFF]"
                       />
                     </div>
 
@@ -1399,16 +2328,13 @@ export const ProductionManagementView: React.FC<ProductionManagementViewProps> =
                           </td>
                           <td className="py-3 px-3 text-[#6F6B88] text-[11px]">{mat.supplierName || "-"}</td>
                           <td className="py-3 px-3 text-center">
-                            <button
-                              onClick={() => {
-                                setSelectedMutationMaterialId(mat.id);
-                                setActiveTab("STOCK_MUTATIONS");
-                              }}
-                              className="px-2.5 py-1 rounded-full bg-[#F5F3FF] hover:bg-[#4A3AFF] hover:text-white text-[#4A3AFF] text-[10.5px] font-bold transition-all cursor-pointer"
-                              title="Lihat Kartu Stok"
+                            <Link
+                              href={`/production/mutations?materialId=${encodeURIComponent(mat.id)}`}
+                              className="inline-block px-2.5 py-1 rounded-full bg-[#F5F3FF] hover:bg-[#4A3AFF] hover:text-white text-[#4A3AFF] text-[10.5px] font-bold transition-all cursor-pointer"
+                              title="Lihat Kartu Stok & Riwayat Mutasi"
                             >
                               Mutasi
-                            </button>
+                            </Link>
                           </td>
                         </tr>
                       );
@@ -1531,7 +2457,7 @@ export const ProductionManagementView: React.FC<ProductionManagementViewProps> =
                 </p>
               </div>
               <button
-                onClick={() => showToast("Form input faktur pembelian bahan baku siap diproses.", "info")}
+                onClick={() => setShowCreatePurchaseModal(true)}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#2DBA7D] hover:bg-[#25A26C] text-white text-xs font-bold shadow-sm shadow-[#2DBA7D]/20 transition-all cursor-pointer shrink-0"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -1551,7 +2477,7 @@ export const ProductionManagementView: React.FC<ProductionManagementViewProps> =
                     <th className="py-3 px-3 text-right">Total Belanja (Rp)</th>
                     <th className="py-3 px-3 text-right">Dibayar (Rp)</th>
                     <th className="py-3 px-3 text-center">Status Hutang</th>
-                    <th className="py-3 px-3 text-center rounded-r-[10px]">Rincian</th>
+                    <th className="py-3 px-3 text-center rounded-r-[10px]">Aksi Dokumen</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E6E3F7]/60">
@@ -1588,13 +2514,22 @@ export const ProductionManagementView: React.FC<ProductionManagementViewProps> =
                         )}
                       </td>
                       <td className="py-3 px-3 text-center">
-                        <button
-                          onClick={() => showToast(`Faktur ${pur.invoiceNumber} (${pur.supplierName}) siap dicetak.`, "info")}
-                          className="p-1.5 rounded-full bg-[#F5F3FF] hover:bg-[#4A3AFF] hover:text-white text-[#4A3AFF] transition-colors cursor-pointer"
-                          title="Lihat Barang Diterima"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            onClick={() => setViewingPurchase(pur)}
+                            className="p-1.5 rounded-full bg-[#F5F3FF] hover:bg-[#4A3AFF] hover:text-white text-[#4A3AFF] transition-colors cursor-pointer"
+                            title="Lihat Rincian Faktur"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleExportPurchaseReport(pur)}
+                            className="p-1.5 rounded-full bg-[#EBF7FC] hover:bg-[#0090D0] hover:text-white text-[#0090D0] transition-colors cursor-pointer"
+                            title="Cetak Faktur & Bukti Penerimaan (PDF)"
+                          >
+                            <Printer className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1865,11 +2800,18 @@ export const ProductionManagementView: React.FC<ProductionManagementViewProps> =
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Categories Section */}
           <div className="bg-white p-6 rounded-[24px] border border-[#E6E3F7] shadow-sm space-y-4">
-            <div className="flex items-center justify-between border-b border-[#E6E3F7] pb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E6E3F7] pb-3">
               <div>
                 <h3 className="font-extrabold text-base text-[#1C1B3A]">Kategori Bahan Baku</h3>
                 <p className="text-xs text-[#6F6B88]">Pemetaan akun COA persediaan &amp; beban HPP</p>
               </div>
+              <button
+                onClick={handleOpenAddCategory}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#4A3AFF] hover:bg-[#3D2EE0] text-white text-xs font-bold shadow-sm shadow-[#4A3AFF]/20 transition-all cursor-pointer shrink-0"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Tambah Kategori</span>
+              </button>
             </div>
 
             <div className="overflow-x-auto">
@@ -1879,19 +2821,47 @@ export const ProductionManagementView: React.FC<ProductionManagementViewProps> =
                     <th className="py-2.5 px-3 rounded-l-[10px]">Kode / Nama</th>
                     <th className="py-2.5 px-3">Akun Persediaan</th>
                     <th className="py-2.5 px-3">Akun Beban (COGS)</th>
+                    <th className="py-2.5 px-3 text-center">Bahan Terkait</th>
+                    <th className="py-2.5 px-3 text-center rounded-r-[10px]">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E6E3F7]/60">
-                  {categories.map((c) => (
-                    <tr key={c.id} className="hover:bg-[#F5F3FF]/40 transition-colors">
-                      <td className="py-2.5 px-3">
-                        <p className="font-bold text-[#1C1B3A]">{c.name}</p>
-                        <p className="text-[10px] text-[#6F6B88]">{c.description}</p>
-                      </td>
-                      <td className="py-2.5 px-3 font-mono font-bold text-[#4A3AFF]">{c.inventoryAccountCode}</td>
-                      <td className="py-2.5 px-3 font-mono font-bold text-[#2DBA7D]">{c.expenseAccountCode}</td>
-                    </tr>
-                  ))}
+                  {categories.map((c) => {
+                    const linkedCount = rawMaterials.filter((m) => m.categoryId === c.id).length;
+                    return (
+                      <tr key={c.id} className="hover:bg-[#F5F3FF]/40 transition-colors">
+                        <td className="py-2.5 px-3">
+                          <p className="font-bold text-[#1C1B3A]">{c.name}</p>
+                          <p className="text-[10px] text-[#6F6B88] line-clamp-1">{c.description}</p>
+                        </td>
+                        <td className="py-2.5 px-3 font-mono font-bold text-[#4A3AFF]">{c.inventoryAccountCode}</td>
+                        <td className="py-2.5 px-3 font-mono font-bold text-[#2DBA7D]">{c.expenseAccountCode}</td>
+                        <td className="py-2.5 px-3 text-center">
+                          <span className="inline-block px-2 py-0.5 rounded-full bg-[#F5F3FF] text-[#4A3AFF] text-[10.5px] font-bold">
+                            {linkedCount} Bahan
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3 text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              onClick={() => handleOpenEditCategory(c)}
+                              className="p-1.5 rounded-full bg-[#F5F3FF] hover:bg-[#4A3AFF] hover:text-white text-[#4A3AFF] transition-colors cursor-pointer"
+                              title="Edit Kategori"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteCategory(c)}
+                              className="p-1.5 rounded-full bg-red-50 hover:bg-red-600 hover:text-white text-red-500 transition-colors cursor-pointer"
+                              title="Hapus Kategori"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -1899,40 +2869,78 @@ export const ProductionManagementView: React.FC<ProductionManagementViewProps> =
 
           {/* Suppliers Section */}
           <div className="bg-white p-6 rounded-[24px] border border-[#E6E3F7] shadow-sm space-y-4">
-            <div className="flex items-center justify-between border-b border-[#E6E3F7] pb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E6E3F7] pb-3">
               <div>
                 <h3 className="font-extrabold text-base text-[#1C1B3A]">Mitra Supplier Rekanan</h3>
                 <p className="text-xs text-[#6F6B88]">Pemasok bahan baku dapur kantin BIT</p>
               </div>
+              <button
+                onClick={handleOpenAddSupplier}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#2DBA7D] hover:bg-[#25A26C] text-white text-xs font-bold shadow-sm shadow-[#2DBA7D]/20 transition-all cursor-pointer shrink-0"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Tambah Supplier</span>
+              </button>
             </div>
 
             <div className="space-y-3">
-              {suppliers.map((s) => (
-                <div key={s.id} className="p-3.5 rounded-[16px] border border-[#E6E3F7] hover:border-[#4A3AFF]/50 transition-all bg-[#FAFAFE] space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[#F5F3FF] text-[#4A3AFF]">
-                        {s.code}
+              {suppliers.map((s) => {
+                const linkedCount = rawMaterials.filter((m) => m.supplierId === s.id).length;
+                return (
+                  <div key={s.id} className="p-3.5 rounded-[16px] border border-[#E6E3F7] hover:border-[#4A3AFF]/50 transition-all bg-[#FAFAFE] space-y-2.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[#F5F3FF] text-[#4A3AFF]">
+                            {s.code}
+                          </span>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                            {s.supplierType}
+                          </span>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                            Termin: {s.paymentTermDays === 0 ? "COD / Tunai" : `${s.paymentTermDays} Hari`}
+                          </span>
+                        </div>
+                        <h4 className="font-bold text-sm text-[#1C1B3A] mt-1.5">{s.name}</h4>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => handleOpenEditSupplier(s)}
+                          className="p-1.5 rounded-full bg-white border border-[#E6E3F7] hover:bg-[#4A3AFF] hover:text-white text-[#4A3AFF] transition-colors cursor-pointer shadow-2xs"
+                          title="Edit Data Supplier"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteSupplier(s)}
+                          className="p-1.5 rounded-full bg-white border border-[#E6E3F7] hover:bg-red-600 hover:text-white text-red-500 transition-colors cursor-pointer shadow-2xs"
+                          title="Hapus Supplier"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-[#6F6B88]">
+                      <div className="flex items-center gap-1.5">
+                        <Phone className="w-3.5 h-3.5 text-[#4A3AFF] shrink-0" />
+                        <span>{s.phone} ({s.contactPerson})</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 truncate">
+                        <MapPin className="w-3.5 h-3.5 text-[#4A3AFF] shrink-0" />
+                        <span className="truncate">{s.address}, {s.city}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[10.5px] pt-1 border-t border-[#E6E3F7]/60">
+                      <span className="text-[#6F6B88] italic truncate">{s.notes || "Mitra pengadaan terverifikasi"}</span>
+                      <span className="font-bold text-[#4A3AFF] shrink-0 ml-2">
+                        {linkedCount} Bahan Dipasok
                       </span>
-                      <h4 className="font-bold text-sm text-[#1C1B3A] mt-1">{s.name}</h4>
-                    </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                      Termin: {s.paymentTermDays === 0 ? "Cash On Delivery" : `${s.paymentTermDays} Hari`}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-[11px] text-[#6F6B88]">
-                    <div className="flex items-center gap-1.5">
-                      <Phone className="w-3.5 h-3.5 text-[#4A3AFF]" />
-                      <span>{s.phone} ({s.contactPerson})</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 truncate">
-                      <MapPin className="w-3.5 h-3.5 text-[#4A3AFF] shrink-0" />
-                      <span className="truncate">{s.address}, {s.city}</span>
                     </div>
                   </div>
-                  <p className="text-[10.5px] text-[#6F6B88] italic">{s.notes}</p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
@@ -2698,18 +3706,14 @@ export const ProductionManagementView: React.FC<ProductionManagementViewProps> =
 
                           return (
                             <tr key={item.id} className="hover:bg-[#F5F3FF]/30">
-                              <td className="py-2.5 px-3">
-                                <select
+                              <td className="py-2.5 px-3 min-w-[240px]">
+                                <PurchaseMaterialCombobox
                                   value={item.rawMaterialId}
-                                  onChange={(e) => handlePoItemChange(item.id, "rawMaterialId", e.target.value)}
-                                  className="w-full px-2.5 py-1.5 rounded-[8px] border border-[#E6E3F7] bg-white text-xs font-bold text-[#1C1B3A] focus:outline-none focus:border-[#4A3AFF]"
-                                >
-                                  {rawMaterials.map((rm) => (
-                                    <option key={rm.id} value={rm.id}>
-                                      [{rm.code}] {rm.name} ({rm.categoryName})
-                                    </option>
-                                  ))}
-                                </select>
+                                  rawMaterials={rawMaterials}
+                                  onSelect={(selectedMat) =>
+                                    handlePoItemChange(item.id, "rawMaterialId", selectedMat.id)
+                                  }
+                                />
                               </td>
                               <td className="py-2.5 px-3 text-center">
                                 <span className="inline-block px-2 py-0.5 rounded-full bg-[#EBF7FC] text-[#0090D0] text-[10px] font-bold">
@@ -2843,6 +3847,877 @@ export const ProductionManagementView: React.FC<ProductionManagementViewProps> =
                 >
                   <CheckCircle2 className="w-4 h-4" />
                   <span>Terbitkan &amp; Kirim Surat PO</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 6: VIEW PURCHASE INVOICE DETAILS                                    */}
+      {/* ========================================================================= */}
+      {viewingPurchase && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-[24px] border border-[#E6E3F7] w-full max-w-3xl overflow-hidden shadow-2xl animate-fadeIn flex flex-col max-h-[92vh]">
+            {/* Header */}
+            <div className="p-5 border-b border-[#E6E3F7] flex items-center justify-between bg-[#F8F7FD]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-full bg-[#2DBA7D] text-white flex items-center justify-center font-bold">
+                  <FileCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-sm sm:text-base text-[#1C1B3A]">
+                    Rincian Faktur Pembelian ({viewingPurchase.invoiceNumber})
+                  </h3>
+                  <p className="text-[11px] text-[#6F6B88]">
+                    Supplier: {viewingPurchase.supplierName} &bull; Waktu: {viewingPurchase.purchaseDate}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setViewingPurchase(null)}
+                className="p-1.5 rounded-full hover:bg-gray-200 text-gray-500 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-5 overflow-y-auto flex-1">
+              {/* Summary Cards Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="bg-[#F8F7FD] p-3 rounded-[12px] border border-[#E6E3F7]">
+                  <p className="text-[10px] text-[#6F6B88] font-bold uppercase">Mitra Supplier</p>
+                  <p className="text-xs font-extrabold text-[#1C1B3A] line-clamp-1">{viewingPurchase.supplierName}</p>
+                  <p className="text-[10.5px] text-[#4A3AFF]">{viewingPurchase.supplierPhone || "-"}</p>
+                </div>
+
+                <div className="bg-[#F8F7FD] p-3 rounded-[12px] border border-[#E6E3F7]">
+                  <p className="text-[10px] text-[#6F6B88] font-bold uppercase">Referensi PO</p>
+                  <p className="text-xs font-mono font-extrabold text-[#4A3AFF]">
+                    {viewingPurchase.poNumber || "Pembelian Langsung"}
+                  </p>
+                  <p className="text-[10px] text-[#6F6B88]">Surat Pesanan Dapur</p>
+                </div>
+
+                <div className="bg-[#F8F7FD] p-3 rounded-[12px] border border-[#E6E3F7]">
+                  <p className="text-[10px] text-[#6F6B88] font-bold uppercase">Metode Pembayaran</p>
+                  <p className="text-xs font-bold text-[#1C1B3A]">
+                    {viewingPurchase.paymentType === "TUNAI_KAS_DAPUR"
+                      ? "Tunai Kas Dapur"
+                      : viewingPurchase.paymentType === "TRANSFER_KOPERASI"
+                      ? "Transfer Koperasi"
+                      : "Tempo / Hutang"}
+                  </p>
+                  <p className="text-[10px] text-[#6F6B88]">{viewingPurchase.cashBook}</p>
+                </div>
+
+                <div className="bg-[#F8F7FD] p-3 rounded-[12px] border border-[#E6E3F7]">
+                  <p className="text-[10px] text-[#6F6B88] font-bold uppercase">Status Pembayaran</p>
+                  <p className="text-xs font-extrabold">
+                    {viewingPurchase.amountDue > 0 ? (
+                      <span className="text-red-600">Hutang Rp {viewingPurchase.amountDue.toLocaleString("id-ID")}</span>
+                    ) : (
+                      <span className="text-[#2DBA7D]">✓ LUNAS</span>
+                    )}
+                  </p>
+                  <p className="text-[10px] text-[#6F6B88]">Dibayar Rp {viewingPurchase.amountPaid.toLocaleString("id-ID")}</p>
+                </div>
+              </div>
+
+              {/* Items Table */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-extrabold text-[#1C1B3A] flex items-center gap-1.5">
+                    <Boxes className="w-3.5 h-3.5 text-[#4A3AFF]" />
+                    <span>Daftar Bahan Baku Diterima ({viewingPurchase.items.length} Item)</span>
+                  </h4>
+                  <span className="text-[11px] text-[#6F6B88]">
+                    Tujuan: <span className="font-semibold text-[#1C1B3A]">{viewingPurchase.location}</span>
+                  </span>
+                </div>
+
+                <div className="overflow-x-auto border border-[#E6E3F7] rounded-[16px]">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-[#F8F7FD] border-b border-[#E6E3F7] text-[#6F6B88] font-bold">
+                        <th className="py-2.5 px-3">Kode</th>
+                        <th className="py-2.5 px-3">Nama Bahan Baku</th>
+                        <th className="py-2.5 px-3 text-center">Satuan Beli</th>
+                        <th className="py-2.5 px-3 text-center">Qty Diterima</th>
+                        <th className="py-2.5 px-3 text-center">Penambahan Stok</th>
+                        <th className="py-2.5 px-3 text-right">Harga Beli</th>
+                        <th className="py-2.5 px-3 text-right">Subtotal</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#E6E3F7]/60">
+                      {viewingPurchase.items.map((item) => (
+                        <tr key={item.id} className="hover:bg-[#F5F3FF]/40">
+                          <td className="py-2.5 px-3 font-mono font-bold text-[#4A3AFF]">{item.rawMaterialCode}</td>
+                          <td className="py-2.5 px-3 font-bold text-[#1C1B3A]">{item.rawMaterialName}</td>
+                          <td className="py-2.5 px-3 text-center text-[#6F6B88]">{item.purchaseUnit}</td>
+                          <td className="py-2.5 px-3 text-center font-extrabold text-[#1C1B3A]">
+                            {item.quantityReceived} {item.purchaseUnit}
+                          </td>
+                          <td className="py-2.5 px-3 text-center">
+                            <span className="inline-block px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-extrabold text-[10.5px]">
+                              +{item.totalStockAdded.toLocaleString("id-ID")} {item.usageUnit}
+                            </span>
+                          </td>
+                          <td className="py-2.5 px-3 text-right">Rp {item.unitPrice.toLocaleString("id-ID")}</td>
+                          <td className="py-2.5 px-3 text-right font-extrabold text-[#1C1B3A]">
+                            Rp {item.subtotal.toLocaleString("id-ID")}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="border-t-2 border-[#1C1B3A] bg-[#F5F3FF] font-extrabold text-[#1C1B3A]">
+                        <td colSpan={6} className="py-2.5 px-3 text-right text-xs">GRAND TOTAL BELANJA:</td>
+                        <td className="py-2.5 px-3 text-right text-sm text-[#4A3AFF]">
+                          Rp {viewingPurchase.grandTotal.toLocaleString("id-ID")}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+
+              {/* Notes & Extra Info */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div className="bg-[#F8F7FD] p-3 rounded-[12px] border border-[#E6E3F7] space-y-1">
+                  <p className="text-[10px] text-[#6F6B88] font-bold uppercase">Kendaraan / Kurir Pengantar</p>
+                  <p className="text-xs font-semibold text-[#1C1B3A] flex items-center gap-1.5">
+                    <Truck className="w-3.5 h-3.5 text-[#4A3AFF]" />
+                    <span>{viewingPurchase.vehiclePlateNumber || "Bawa Sendiri / Logistik Kitchen"}</span>
+                  </p>
+                </div>
+                <div className="bg-[#F8F7FD] p-3 rounded-[12px] border border-[#E6E3F7] space-y-1">
+                  <p className="text-[10px] text-[#6F6B88] font-bold uppercase">Catatan &amp; Kondisi Fisik</p>
+                  <p className="text-xs text-[#1C1B3A]">
+                    {viewingPurchase.notes || "Kondisi bahan segar sesuai standar penerimaan gudang dapur."}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-[#E6E3F7] flex items-center justify-between bg-white">
+              <button
+                onClick={() => handleExportPurchaseReport(viewingPurchase)}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#EBF7FC] hover:bg-[#0090D0] hover:text-white text-[#0090D0] text-xs font-bold transition-colors cursor-pointer"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                <span>Cetak Faktur / Bukti Penerimaan (PDF)</span>
+              </button>
+              <button
+                onClick={() => setViewingPurchase(null)}
+                className="px-6 py-2 rounded-full bg-[#1C1B3A] text-white text-xs font-bold cursor-pointer"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 7: CREATE INBOUND PURCHASE INVOICE                                 */}
+      {/* ========================================================================= */}
+      {showCreatePurchaseModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-[24px] border border-[#E6E3F7] w-full max-w-4xl overflow-hidden shadow-2xl animate-fadeIn flex flex-col max-h-[94vh]">
+            {/* Header */}
+            <div className="p-5 border-b border-[#E6E3F7] flex items-center justify-between bg-[#F8F7FD]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-full bg-[#2DBA7D] text-white flex items-center justify-center font-bold">
+                  <Truck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-sm sm:text-base text-[#1C1B3A]">
+                    Input Penerimaan Barang &amp; Faktur Pembelian Masuk
+                  </h3>
+                  <p className="text-[11px] text-[#6F6B88]">
+                    Catat barang fisik masuk dari supplier. Stok gudang/dapur akan otomatis bertambah &amp; kartu mutasi diterbitkan.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowCreatePurchaseModal(false)}
+                className="p-1.5 rounded-full hover:bg-gray-200 text-gray-500 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSavePurchaseInvoice} className="flex flex-col flex-1 overflow-hidden">
+              <div className="p-6 space-y-5 overflow-y-auto flex-1">
+                {/* 1. Informasi Supplier & Ref PO */}
+                <div className="bg-[#F8F7FD] p-4 rounded-[16px] border border-[#E6E3F7] space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <h4 className="text-xs font-extrabold text-[#1C1B3A] flex items-center gap-1.5">
+                      <Factory className="w-3.5 h-3.5 text-[#4A3AFF]" />
+                      <span>Informasi Supplier &amp; Referensi Surat PO</span>
+                    </h4>
+                    {purchaseOrders.length > 0 && (
+                      <span className="text-[11px] text-[#4A3AFF] font-bold">
+                        Pilih PO untuk mengisi otomatis daftar bahan yang dipesan
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div className="space-y-1 sm:col-span-2">
+                      <label className="text-[11px] font-bold text-[#1C1B3A]">Tarik dari Surat PO (Opsional)</label>
+                      <select
+                        value={purchasePoNumber}
+                        onChange={(e) => handleSelectPoForPurchase(e.target.value)}
+                        className="w-full px-3 py-2 rounded-[10px] border border-[#E6E3F7] bg-white text-xs font-bold text-[#4A3AFF] focus:outline-none focus:border-[#4A3AFF]"
+                      >
+                        <option value="">-- Pembelian Langsung (Tanpa PO) --</option>
+                        {purchaseOrders.map((po) => (
+                          <option key={po.id} value={po.poNumber}>
+                            {po.poNumber} &bull; {po.supplierName} ({po.items.length} item &bull; Rp {po.grandTotal.toLocaleString("id-ID")})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="space-y-1 sm:col-span-2">
+                      <label className="text-[11px] font-bold text-[#1C1B3A]">Supplier Rekanan *</label>
+                      <select
+                        value={purchaseSupplierId}
+                        onChange={(e) => setPurchaseSupplierId(e.target.value)}
+                        className="w-full px-3 py-2 rounded-[10px] border border-[#E6E3F7] bg-white text-xs font-bold text-[#1C1B3A] focus:outline-none focus:border-[#4A3AFF]"
+                      >
+                        {suppliers.map((sup) => (
+                          <option key={sup.id} value={sup.id}>
+                            {sup.name} ({sup.supplierType} &bull; {sup.city})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-[#1C1B3A]">Waktu Penerimaan Barang</label>
+                      <input
+                        type="datetime-local"
+                        value={purchaseInvoiceDate}
+                        onChange={(e) => setPurchaseInvoiceDate(e.target.value)}
+                        className="w-full px-3 py-2 rounded-[10px] border border-[#E6E3F7] bg-white text-xs text-[#1C1B3A] focus:outline-none focus:border-[#4A3AFF]"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-[#1C1B3A]">Plat Nomor / Armada Vendor</label>
+                      <input
+                        type="text"
+                        placeholder="Contoh: B 9482 KBC (Mobil Box)"
+                        value={purchaseVehiclePlate}
+                        onChange={(e) => setPurchaseVehiclePlate(e.target.value)}
+                        className="w-full px-3 py-2 rounded-[10px] border border-[#E6E3F7] bg-white text-xs text-[#1C1B3A] focus:outline-none focus:border-[#4A3AFF]"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-[#1C1B3A]">Lokasi Masuk Gudang / Dapur</label>
+                      <input
+                        type="text"
+                        value={purchaseLocation}
+                        onChange={(e) => setPurchaseLocation(e.target.value)}
+                        className="w-full px-3 py-2 rounded-[10px] border border-[#E6E3F7] bg-white text-xs text-[#1C1B3A] focus:outline-none focus:border-[#4A3AFF]"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Metode Pembayaran */}
+                <div className="bg-[#F8F7FD] p-4 rounded-[16px] border border-[#E6E3F7] space-y-3">
+                  <h4 className="text-xs font-extrabold text-[#1C1B3A] flex items-center gap-1.5">
+                    <DollarSign className="w-3.5 h-3.5 text-[#2DBA7D]" />
+                    <span>Metode Pembayaran &amp; Kas Pengeluaran</span>
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => handlePaymentTypeChange("TUNAI_KAS_DAPUR")}
+                      className={`p-3 rounded-[12px] border text-left cursor-pointer transition-all ${
+                        purchasePaymentType === "TUNAI_KAS_DAPUR"
+                          ? "bg-white border-[#2DBA7D] shadow-xs ring-2 ring-[#2DBA7D]/20"
+                          : "bg-white/60 border-[#E6E3F7] hover:bg-white"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-[#1C1B3A]">Tunai Kas Dapur</span>
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Lunas</span>
+                      </div>
+                      <p className="text-[10.5px] text-[#6F6B88] mt-1">Petty Cash Kas Operasional Dapur</p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handlePaymentTypeChange("TRANSFER_KOPERASI")}
+                      className={`p-3 rounded-[12px] border text-left cursor-pointer transition-all ${
+                        purchasePaymentType === "TRANSFER_KOPERASI"
+                          ? "bg-white border-[#4A3AFF] shadow-xs ring-2 ring-[#4A3AFF]/20"
+                          : "bg-white/60 border-[#E6E3F7] hover:bg-white"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-[#1C1B3A]">Transfer Koperasi</span>
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700">Bank / Kas Utama</span>
+                      </div>
+                      <p className="text-[10.5px] text-[#6F6B88] mt-1">Rekening Kas Utama Kopkar BIT</p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handlePaymentTypeChange("TEMPO_HUTANG")}
+                      className={`p-3 rounded-[12px] border text-left cursor-pointer transition-all ${
+                        purchasePaymentType === "TEMPO_HUTANG"
+                          ? "bg-white border-amber-500 shadow-xs ring-2 ring-amber-500/20"
+                          : "bg-white/60 border-[#E6E3F7] hover:bg-white"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-[#1C1B3A]">Tempo / Hutang</span>
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800">Hutang Dagang</span>
+                      </div>
+                      <p className="text-[10.5px] text-[#6F6B88] mt-1">Jatuh tempo 14 - 30 hari supplier</p>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3. Multi-Item Bahan Baku Masuk */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-xs font-extrabold text-[#1C1B3A] flex items-center gap-1.5">
+                        <Boxes className="w-3.5 h-3.5 text-[#4A3AFF]" />
+                        <span>Daftar Bahan Baku Fisik yang Diterima ({purchaseFormItems.length} Macam Bahan)</span>
+                      </h4>
+                      <p className="text-[10.5px] text-[#6F6B88]">
+                        Stok di master bahan baku akan otomatis bertambah sesuai rasio konversi unit pakai.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAddPurchaseFormItem}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#F5F3FF] hover:bg-[#4A3AFF] hover:text-white text-[#4A3AFF] text-xs font-bold border border-[#E6E3F7] transition-all cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Tambah Baris Bahan</span>
+                    </button>
+                  </div>
+
+                  <div className="overflow-x-auto border border-[#E6E3F7] rounded-[16px]">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-[#F8F7FD] border-b border-[#E6E3F7] text-[#6F6B88] font-bold">
+                          <th className="py-2.5 px-3">Bahan Baku</th>
+                          <th className="py-2.5 px-3 text-center">Satuan Beli</th>
+                          <th className="py-2.5 px-3 text-center w-28">Qty Diterima</th>
+                          <th className="py-2.5 px-3 text-center w-36">Tambah Stok</th>
+                          <th className="py-2.5 px-3 text-right w-36">Harga Satuan (Rp)</th>
+                          <th className="py-2.5 px-3 text-right">Subtotal (Rp)</th>
+                          <th className="py-2.5 px-3 text-center w-12">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#E6E3F7]/60">
+                        {purchaseFormItems.map((item) => {
+                          const mat = rawMaterials.find((m) => m.id === item.rawMaterialId) || rawMaterials[0];
+                          const qty = typeof item.quantityReceived === "number" ? item.quantityReceived : (Number(item.quantityReceived) || 0);
+                          const unitRatio = mat ? mat.unitRatio : 1;
+                          const totalAdded = Math.round(qty * unitRatio);
+                          const subtotal = qty * (typeof item.unitPrice === "number" ? item.unitPrice : (Number(item.unitPrice) || 0));
+
+                          return (
+                            <tr key={item.id} className="hover:bg-[#F5F3FF]/30">
+                              <td className="py-2.5 px-3 min-w-[240px]">
+                                <PurchaseMaterialCombobox
+                                  value={item.rawMaterialId}
+                                  rawMaterials={rawMaterials}
+                                  onSelect={(selectedMat) =>
+                                    handlePurchaseFormItemChange(item.id, "rawMaterialId", selectedMat.id)
+                                  }
+                                />
+                              </td>
+                              <td className="py-2.5 px-3 text-center">
+                                <span className="inline-block px-2 py-0.5 rounded-full bg-[#EBF7FC] text-[#0090D0] text-[10px] font-bold">
+                                  {mat?.purchaseUnit || "Kg"}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3 text-center">
+                                <input
+                                  type="number"
+                                  min="1"
+                                  placeholder="1"
+                                  value={item.quantityReceived}
+                                  onChange={(e) =>
+                                    handlePurchaseFormItemChange(item.id, "quantityReceived", e.target.value)
+                                  }
+                                  onFocus={(e) => e.target.select()}
+                                  className="w-full px-2 py-1.5 rounded-[8px] border border-[#E6E3F7] text-center font-extrabold text-[#2DBA7D] text-xs focus:outline-none focus:border-[#2DBA7D]"
+                                  required
+                                />
+                              </td>
+                              <td className="py-2.5 px-3 text-center">
+                                <span className="font-extrabold text-[#2DBA7D] text-[11px]">
+                                  +{totalAdded.toLocaleString("id-ID")} {mat?.usageUnit || "gram"}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3 text-right">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="500"
+                                  placeholder="0"
+                                  value={item.unitPrice}
+                                  onChange={(e) =>
+                                    handlePurchaseFormItemChange(item.id, "unitPrice", e.target.value)
+                                  }
+                                  onFocus={(e) => e.target.select()}
+                                  className="w-full px-2 py-1.5 rounded-[8px] border border-[#E6E3F7] text-right font-bold text-[#1C1B3A] text-xs focus:outline-none focus:border-[#4A3AFF]"
+                                  required
+                                />
+                              </td>
+                              <td className="py-2.5 px-3 text-right font-extrabold text-[#1C1B3A]">
+                                Rp {subtotal.toLocaleString("id-ID")}
+                              </td>
+                              <td className="py-2.5 px-3 text-center">
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemovePurchaseFormItem(item.id)}
+                                  disabled={purchaseFormItems.length <= 1}
+                                  className="p-1.5 rounded-full text-red-500 hover:bg-red-50 disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer"
+                                  title="Hapus Baris"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* 4. Rekap Biaya & Pembayaran */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                  <div className="space-y-3 bg-[#F8F7FD] p-4 rounded-[16px] border border-[#E6E3F7]">
+                    <h4 className="text-xs font-extrabold text-[#1C1B3A]">Penyesuaian Biaya &amp; Nominal Bayar</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-[#1C1B3A]">Diskon Faktur (Rp)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="0"
+                          value={purchaseDiscountAmount}
+                          onChange={(e) =>
+                            setPurchaseDiscountAmount(e.target.value === "" ? "" : parseFloat(e.target.value))
+                          }
+                          onFocus={(e) => e.target.select()}
+                          className="w-full px-3 py-2 rounded-[10px] border border-[#E6E3F7] bg-white text-xs font-bold text-[#1C1B3A]"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-[#1C1B3A]">Biaya Kirim / Bongkar (Rp)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="0"
+                          value={purchaseAdminCost}
+                          onChange={(e) =>
+                            setPurchaseAdminCost(e.target.value === "" ? "" : parseFloat(e.target.value))
+                          }
+                          onFocus={(e) => e.target.select()}
+                          className="w-full px-3 py-2 rounded-[10px] border border-[#E6E3F7] bg-white text-xs font-bold text-[#1C1B3A]"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1 pt-1">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[11px] font-bold text-[#1C1B3A]">Nominal Dibayar (Rp)</label>
+                        <button
+                          type="button"
+                          onClick={() => setPurchaseAmountPaid(purchaseCalculations.grandTotal)}
+                          className="text-[10px] text-[#4A3AFF] font-bold hover:underline cursor-pointer"
+                        >
+                          Set Lunas Penuh
+                        </button>
+                      </div>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder={String(purchaseCalculations.grandTotal)}
+                        value={purchaseAmountPaid}
+                        onChange={(e) =>
+                          setPurchaseAmountPaid(e.target.value === "" ? "" : parseFloat(e.target.value))
+                        }
+                        onFocus={(e) => e.target.select()}
+                        className="w-full px-3 py-2 rounded-[10px] border border-[#E6E3F7] bg-white text-xs font-bold text-[#2DBA7D]"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="bg-[#1C1B3A] text-white p-5 rounded-[16px] flex flex-col justify-between shadow-lg">
+                    <div className="space-y-1.5 text-xs">
+                      <div className="flex items-center justify-between text-white/70">
+                        <span>Subtotal ({purchaseFormItems.length} macam item):</span>
+                        <span className="font-mono">Rp {purchaseCalculations.subtotal.toLocaleString("id-ID")}</span>
+                      </div>
+                      {Number(purchaseDiscountAmount) > 0 && (
+                        <div className="flex items-center justify-between text-emerald-400">
+                          <span>Diskon Faktur:</span>
+                          <span className="font-mono">- Rp {Number(purchaseDiscountAmount).toLocaleString("id-ID")}</span>
+                        </div>
+                      )}
+                      {Number(purchaseAdminCost) > 0 && (
+                        <div className="flex items-center justify-between text-amber-300">
+                          <span>Biaya Kirim / Admin:</span>
+                          <span className="font-mono">+ Rp {Number(purchaseAdminCost).toLocaleString("id-ID")}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between text-white/90 pt-1 border-t border-white/10 font-bold">
+                        <span>Total Belanja:</span>
+                        <span className="font-mono text-[#FFB547]">Rp {purchaseCalculations.grandTotal.toLocaleString("id-ID")}</span>
+                      </div>
+                    </div>
+                    <div className="pt-3 border-t border-white/20 flex items-baseline justify-between">
+                      <span className="text-xs font-bold text-white/80">
+                        {purchaseCalculations.amountDue > 0 ? "SISA HUTANG TEMPO:" : "STATUS BAYAR:"}
+                      </span>
+                      <span
+                        className={`text-xl font-black ${
+                          purchaseCalculations.amountDue > 0 ? "text-red-400" : "text-[#2DBA7D]"
+                        }`}
+                      >
+                        {purchaseCalculations.amountDue > 0
+                          ? `Rp ${purchaseCalculations.amountDue.toLocaleString("id-ID")}`
+                          : "✓ LUNAS"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 5. Catatan Penerimaan */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-[#1C1B3A]">Catatan Penerimaan / Keterangan Kondisi Bahan</label>
+                  <input
+                    type="text"
+                    value={purchaseNotes}
+                    onChange={(e) => setPurchaseNotes(e.target.value)}
+                    placeholder="Contoh: Kondisi ayam beku suhu terjaga, sayur segar tidak layu."
+                    className="w-full px-3 py-2 rounded-[10px] border border-[#E6E3F7] text-xs text-[#1C1B3A] focus:outline-none focus:border-[#4A3AFF]"
+                  />
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 border-t border-[#E6E3F7] flex items-center justify-end gap-2.5 bg-white">
+                <button
+                  type="button"
+                  onClick={() => setShowCreatePurchaseModal(false)}
+                  className="px-5 py-2.5 rounded-full border border-[#E6E3F7] text-xs font-bold text-[#6F6B88] hover:bg-gray-100 cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 rounded-full bg-[#2DBA7D] hover:bg-[#25A26C] text-white text-xs font-bold shadow-md shadow-[#2DBA7D]/20 cursor-pointer flex items-center gap-2"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Simpan Faktur &amp; Tambah Stok Masuk</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 8: TAMBAH / EDIT KATEGORI BAHAN BAKU                                */}
+      {/* ========================================================================= */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-[24px] border border-[#E6E3F7] w-full max-w-lg overflow-hidden shadow-2xl animate-fadeIn flex flex-col max-h-[92vh]">
+            <div className="p-5 border-b border-[#E6E3F7] flex items-center justify-between bg-[#F8F7FD]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-full bg-[#4A3AFF] text-white flex items-center justify-center font-bold">
+                  <Tag className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-sm sm:text-base text-[#1C1B3A]">
+                    {editingCategory ? "Edit Kategori Bahan Baku" : "Tambah Kategori Bahan Baku Baru"}
+                  </h3>
+                  <p className="text-[11px] text-[#6F6B88]">
+                    Konfigurasi klasifikasi bahan baku dan nomor akun Chart of Accounts (COA).
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowCategoryModal(false)}
+                className="p-1.5 rounded-full hover:bg-gray-200 text-gray-500 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveCategory} className="p-6 space-y-4 overflow-y-auto flex-1">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-[#1C1B3A]">Nama Kategori *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Contoh: Frozen Food &amp; Olahan Beku"
+                  value={categoryName}
+                  onChange={(e) => setCategoryName(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-[12px] border border-[#E6E3F7] text-xs text-[#1C1B3A] focus:outline-none focus:border-[#4A3AFF] font-medium"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-[#1C1B3A]">Kode Kategori (Uppercase)</label>
+                <input
+                  type="text"
+                  placeholder="Contoh: FROZEN_FOOD"
+                  value={categoryCode}
+                  onChange={(e) => setCategoryCode(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-[12px] border border-[#E6E3F7] text-xs text-[#1C1B3A] font-mono focus:outline-none focus:border-[#4A3AFF]"
+                />
+              </div>
+
+              <div className="p-3.5 rounded-[16px] bg-[#F5F3FF] border border-[#E6E3F7] space-y-3">
+                <p className="text-xs font-bold text-[#4A3AFF]">Pemetaan Chart of Accounts (COA)</p>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-[#1C1B3A]">Akun Persediaan (Aset)</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="1130207"
+                      value={categoryInventoryAccount}
+                      onChange={(e) => setCategoryInventoryAccount(e.target.value)}
+                      className="w-full px-3 py-2 rounded-[10px] border border-[#E6E3F7] bg-white font-mono text-xs text-[#4A3AFF] font-bold"
+                    />
+                    <span className="text-[10px] text-[#6F6B88]">Kepala 1 (Aktiva Lancar Dapur)</span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-[#1C1B3A]">Akun Beban (COGS / HPP)</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="5110216"
+                      value={categoryExpenseAccount}
+                      onChange={(e) => setCategoryExpenseAccount(e.target.value)}
+                      className="w-full px-3 py-2 rounded-[10px] border border-[#E6E3F7] bg-white font-mono text-xs text-[#2DBA7D] font-bold"
+                    />
+                    <span className="text-[10px] text-[#6F6B88]">Kepala 5 (Beban Pokok Menu)</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-[#1C1B3A]">Deskripsi / Keterangan Bahan</label>
+                <textarea
+                  rows={2}
+                  placeholder="Contoh: Nugget ayam, kentang goreng beku, sosis impor, dimsum"
+                  value={categoryDescription}
+                  onChange={(e) => setCategoryDescription(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-[12px] border border-[#E6E3F7] text-xs text-[#1C1B3A] focus:outline-none focus:border-[#4A3AFF]"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-[#E6E3F7] flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setShowCategoryModal(false)}
+                  className="px-5 py-2.5 rounded-full border border-[#E6E3F7] text-xs font-bold text-[#6F6B88] hover:bg-gray-100 cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 rounded-full bg-[#4A3AFF] hover:bg-[#3D2EE0] text-white text-xs font-bold shadow-md shadow-[#4A3AFF]/20 cursor-pointer flex items-center gap-1.5"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>{editingCategory ? "Simpan Perubahan" : "Tambahkan Kategori"}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 9: TAMBAH / EDIT MITRA SUPPLIER                                      */}
+      {/* ========================================================================= */}
+      {showSupplierModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-[24px] border border-[#E6E3F7] w-full max-w-xl overflow-hidden shadow-2xl animate-fadeIn flex flex-col max-h-[92vh]">
+            <div className="p-5 border-b border-[#E6E3F7] flex items-center justify-between bg-[#F8F7FD]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-full bg-[#2DBA7D] text-white flex items-center justify-center font-bold">
+                  <Building2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-sm sm:text-base text-[#1C1B3A]">
+                    {editingSupplier ? "Edit Data Mitra Supplier" : "Daftarkan Mitra Supplier Baru"}
+                  </h3>
+                  <p className="text-[11px] text-[#6F6B88]">
+                    Kelola data vendor rekanan, kontak PIC, dan termin pembayaran pengadaan.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowSupplierModal(false)}
+                className="p-1.5 rounded-full hover:bg-gray-200 text-gray-500 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveSupplier} className="p-6 space-y-4 overflow-y-auto flex-1">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="space-y-1 sm:col-span-2">
+                  <label className="text-xs font-bold text-[#1C1B3A]">Nama Supplier / Perusahaan *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Contoh: PT Berkah Pangan Nusantara"
+                    value={supplierName}
+                    onChange={(e) => setSupplierName(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-[12px] border border-[#E6E3F7] text-xs text-[#1C1B3A] font-bold focus:outline-none focus:border-[#4A3AFF]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-[#1C1B3A]">Kode Supplier</label>
+                  <input
+                    type="text"
+                    placeholder="SUP-06"
+                    value={supplierCode}
+                    onChange={(e) => setSupplierCode(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-[12px] border border-[#E6E3F7] text-xs text-[#1C1B3A] font-mono focus:outline-none focus:border-[#4A3AFF]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-[#1C1B3A]">Tipe Vendor</label>
+                  <select
+                    value={supplierType}
+                    onChange={(e) => setSupplierType(e.target.value as any)}
+                    className="w-full px-3.5 py-2.5 rounded-[12px] border border-[#E6E3F7] bg-white text-xs text-[#1C1B3A] font-medium focus:outline-none focus:border-[#4A3AFF]"
+                  >
+                    <option value="DISTRIBUTOR">Distributor Resmi</option>
+                    <option value="GROSIR">Grosir / Agen Besar</option>
+                    <option value="PASAR_TRADISIONAL">Pasar Tradisional</option>
+                    <option value="SUPERMARKET">Supermarket / Modern Trade</option>
+                    <option value="LOKAL">Supplier Lokal / Petani</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-[#1C1B3A]">Termin Pembayaran (Hari)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="0 = Cash / COD, 7, 14, 30 hari"
+                    value={supplierPaymentTermDays}
+                    onChange={(e) =>
+                      setSupplierPaymentTermDays(e.target.value === "" ? "" : parseInt(e.target.value) || 0)
+                    }
+                    onFocus={(e) => e.target.select()}
+                    className="w-full px-3.5 py-2.5 rounded-[12px] border border-[#E6E3F7] text-xs text-[#1C1B3A] font-bold focus:outline-none focus:border-[#4A3AFF]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-[#1C1B3A]">Nama Kontak PIC / Sales</label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: Bpk. Hendra Gunawan"
+                    value={supplierContact}
+                    onChange={(e) => setSupplierContact(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-[12px] border border-[#E6E3F7] text-xs text-[#1C1B3A] focus:outline-none focus:border-[#4A3AFF]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-[#1C1B3A]">Nomor WhatsApp / Telepon</label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: 0812-9988-7766"
+                    value={supplierPhone}
+                    onChange={(e) => setSupplierPhone(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-[12px] border border-[#E6E3F7] text-xs text-[#1C1B3A] font-medium focus:outline-none focus:border-[#4A3AFF]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="space-y-1 sm:col-span-2">
+                  <label className="text-xs font-bold text-[#1C1B3A]">Alamat Kantor / Gudang Vendor</label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: Jl. Kamal Muara No. 10 Kav. 4"
+                    value={supplierAddress}
+                    onChange={(e) => setSupplierAddress(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-[12px] border border-[#E6E3F7] text-xs text-[#1C1B3A] focus:outline-none focus:border-[#4A3AFF]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-[#1C1B3A]">Kota / Wilayah</label>
+                  <input
+                    type="text"
+                    placeholder="Jakarta Barat"
+                    value={supplierCity}
+                    onChange={(e) => setSupplierCity(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-[12px] border border-[#E6E3F7] text-xs text-[#1C1B3A] focus:outline-none focus:border-[#4A3AFF]"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-[#1C1B3A]">Catatan Pengadaan / Ketentuan Tambahan</label>
+                <textarea
+                  rows={2}
+                  placeholder="Contoh: Pemasok ayam potong segar pagi hari, min. order 10 ekor gratis ongkir."
+                  value={supplierNotes}
+                  onChange={(e) => setSupplierNotes(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-[12px] border border-[#E6E3F7] text-xs text-[#1C1B3A] focus:outline-none focus:border-[#4A3AFF]"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-[#E6E3F7] flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setShowSupplierModal(false)}
+                  className="px-5 py-2.5 rounded-full border border-[#E6E3F7] text-xs font-bold text-[#6F6B88] hover:bg-gray-100 cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 rounded-full bg-[#2DBA7D] hover:bg-[#25A26C] text-white text-xs font-bold shadow-md shadow-[#2DBA7D]/20 cursor-pointer flex items-center gap-1.5"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>{editingSupplier ? "Simpan Perubahan" : "Daftarkan Supplier"}</span>
                 </button>
               </div>
             </form>

@@ -11,17 +11,14 @@ import {
   Coins,
   FileText,
   Users,
-  Calculator,
   Calendar,
   Layers,
   Search,
   Clock,
-  Sparkles,
   Printer,
   X,
   Building2,
   Activity,
-  Percent,
   FileSpreadsheet,
 } from "lucide-react";
 import {
@@ -50,7 +47,7 @@ import { ReportExportModal } from "@/components/common/ReportExportModal";
 export const BankChannelingView: React.FC = () => {
   // Navigation Sub-tab
   const [activeTab, setActiveTab] = useState<
-    "overview" | "partners" | "drawdowns" | "debtors" | "simulator" | "repayments"
+    "overview" | "partners" | "drawdowns" | "debtors" | "repayments"
   >("overview");
 
   // Main Datasets (Interactive State)
@@ -95,12 +92,6 @@ export const BankChannelingView: React.FC = () => {
   const [drawdownSearch, setDrawdownSearch] = useState("");
   const [debtorSearch, setDebtorSearch] = useState("");
   const [partnerFilter, setPartnerFilter] = useState("ALL");
-
-  // Simulator State
-  const [simPlafon, setSimPlafon] = useState<number>(150000000);
-  const [simBankRate, setSimBankRate] = useState<number>(5.25);
-  const [simCoopRate, setSimCoopRate] = useState<number>(7.50);
-  const [simTenorMonths, setSimTenorMonths] = useState<number>(24);
 
   // Selected Bank for Drawdown
   const currentBank = partners.find((p) => p.id === selectedBankId) || partners[0];
@@ -154,17 +145,6 @@ export const BankChannelingView: React.FC = () => {
     setLastExecutedTrx(newTrx);
     setShowSuccess(true);
   };
-
-  // Yield Simulation Formulas
-  const simNimSpread = Number((simCoopRate - simBankRate).toFixed(2));
-  const simMonthlyBankInterest = (simPlafon * (simBankRate / 100)) / 12;
-  const simMonthlyCoopInterest = (simPlafon * (simCoopRate / 100)) / 12;
-  const simMonthlyPrincipal = simPlafon / (simTenorMonths || 1);
-  const simMonthlyMemberInstallment = Math.round(simMonthlyPrincipal + simMonthlyCoopInterest);
-  const simMonthlyBankObligation = Math.round(simMonthlyPrincipal + simMonthlyBankInterest);
-  const simTotalCoopIncome = Math.round(simMonthlyCoopInterest * simTenorMonths);
-  const simTotalBankCost = Math.round(simMonthlyBankInterest * simTenorMonths);
-  const simNetShuProfit = simTotalCoopIncome - simTotalBankCost;
 
   // Filtered Drawdowns
   const filteredDrawdowns = drawdowns.filter((item) => {
@@ -224,13 +204,6 @@ export const BankChannelingView: React.FC = () => {
           >
             <Printer className="w-4 h-4" />
             <span>Cetak Rekap Channeling</span>
-          </button>
-          <button
-            onClick={() => setActiveTab("simulator")}
-            className="px-4 py-2 rounded-full border border-[#4A3AFF] text-[#4A3AFF] bg-[#F5F3FF] hover:bg-[#ECE8FF] text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
-          >
-            <Calculator className="w-3.5 h-3.5" />
-            <span>Simulasi Margin (NIM)</span>
           </button>
         </div>
       </div>
@@ -304,18 +277,6 @@ export const BankChannelingView: React.FC = () => {
           >
             {debtors.length}
           </span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab("simulator")}
-          className={`px-4 py-2.5 rounded-full text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-2 ${
-            activeTab === "simulator"
-              ? "bg-[#4A3AFF] text-white shadow-md shadow-[#4A3AFF]/20"
-              : "bg-white text-[#6F6B88] border border-[#E6E3F7] hover:bg-[#FAFAFC]"
-          }`}
-        >
-          <Calculator className="w-3.5 h-3.5" />
-          <span>Kalkulator Margin & NIM</span>
         </button>
 
         <button
@@ -942,207 +903,7 @@ export const BankChannelingView: React.FC = () => {
         </div>
       )}
 
-      {/* 7. SUB-TAB 5: KALKULATOR SIMULASI MARGIN & NIM */}
-      {activeTab === "simulator" && (
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-[20px] border border-[#E6E3F7] shadow-sm">
-            <h2 className="text-base font-bold text-[#1C1B3A] mb-1">
-              Kalkulator Simulasi Margin & Net Interest Margin (NIM) Koperasi
-            </h2>
-            <p className="text-xs text-[#6F6B88]">
-              Hitung potensi proyeksi SHU Koperasi dari selisih suku bunga wholesale bank rekanan dengan suku bunga penyaluran pinjaman ke anggota.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Input Controls */}
-            <div className="lg:col-span-5 bg-white p-6 rounded-[20px] border border-[#E6E3F7] shadow-sm space-y-5">
-              <h3 className="font-bold text-sm text-[#1C1B3A] flex items-center gap-2">
-                <Calculator className="w-4 h-4 text-[#4A3AFF]" />
-                <span>Parameter Simulasi Channeling</span>
-              </h3>
-
-              {/* Plafon Penarikan */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs font-bold text-[#1C1B3A]">
-                  <span>Plafon Penarikan Dana</span>
-                  <span className="text-[#4A3AFF] text-sm">Rp {simPlafon.toLocaleString("id-ID")}</span>
-                </div>
-                <input
-                  type="range"
-                  min="20000000"
-                  max="1000000000"
-                  step="10000000"
-                  value={simPlafon}
-                  onChange={(e) => setSimPlafon(Number(e.target.value))}
-                  className="w-full accent-[#4A3AFF] cursor-pointer"
-                />
-                <div className="flex justify-between text-[10px] text-[#6F6B88]">
-                  <span>Rp 20 Jt</span>
-                  <span>Rp 500 Jt</span>
-                  <span>Rp 1 Miliar</span>
-                </div>
-              </div>
-
-              {/* Suku Bunga Bank Wholesale */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs font-bold text-[#1C1B3A]">
-                  <span>Cost of Fund Bank (Bunga Wholesale)</span>
-                  <span className="text-[#D97706] text-sm">{simBankRate}% p.a.</span>
-                </div>
-                <input
-                  type="range"
-                  min="4.50"
-                  max="9.00"
-                  step="0.25"
-                  value={simBankRate}
-                  onChange={(e) => setSimBankRate(Number(e.target.value))}
-                  className="w-full accent-[#D97706] cursor-pointer"
-                />
-                <div className="flex justify-between text-[10px] text-[#6F6B88]">
-                  <span>4.50%</span>
-                  <span>6.75%</span>
-                  <span>9.00%</span>
-                </div>
-              </div>
-
-              {/* Suku Bunga Penyaluran Koperasi */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs font-bold text-[#1C1B3A]">
-                  <span>Suku Bunga Koperasi ke Anggota</span>
-                  <span className="text-[#2DBA7D] text-sm">{simCoopRate}% p.a.</span>
-                </div>
-                <input
-                  type="range"
-                  min="5.00"
-                  max="12.00"
-                  step="0.25"
-                  value={simCoopRate}
-                  onChange={(e) => setSimCoopRate(Number(e.target.value))}
-                  className="w-full accent-[#2DBA7D] cursor-pointer"
-                />
-                <div className="flex justify-between text-[10px] text-[#6F6B88]">
-                  <span>5.00%</span>
-                  <span>8.50%</span>
-                  <span>12.00%</span>
-                </div>
-              </div>
-
-              {/* Tenor Pinjaman */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs font-bold text-[#1C1B3A]">
-                  <span>Tenor Pembiayaan</span>
-                  <span className="text-[#7C3AED] text-sm">{simTenorMonths} Bulan</span>
-                </div>
-                <div className="grid grid-cols-4 gap-2">
-                  {[12, 24, 36, 48].map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setSimTenorMonths(t)}
-                      className={`py-2 rounded-[10px] text-xs font-bold transition-all cursor-pointer ${
-                        simTenorMonths === t
-                          ? "bg-[#4A3AFF] text-white shadow-sm"
-                          : "bg-[#FAFAFC] border border-[#E6E3F7] text-[#6F6B88] hover:text-[#1C1B3A]"
-                      }`}
-                    >
-                      {t} Bulan
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Simulation Results */}
-            <div className="lg:col-span-7 space-y-5">
-              {/* Highlight Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Net Spread Margin (NIM) */}
-                <div className="p-5 rounded-[18px] bg-gradient-to-br from-[#F5F3FF] to-[#EDE9FE] border border-[#E6E3F7] space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-[#4A3AFF] uppercase">
-                      Spread Margin (NIM)
-                    </span>
-                    <Percent className="w-4 h-4 text-[#4A3AFF]" />
-                  </div>
-                  <p className="text-3xl font-bold text-[#4A3AFF]">
-                    {simNimSpread >= 0 ? `+${simNimSpread}%` : `${simNimSpread}%`}
-                  </p>
-                  <p className="text-[11px] text-[#6F6B88]">
-                    Selisih margin bersih koperasi per tahun
-                  </p>
-                </div>
-
-                {/* Proyeksi Total SHU Bersih Koperasi */}
-                <div className="p-5 rounded-[18px] bg-gradient-to-br from-[#E6F9F0] to-[#DCFCE7] border border-[#2DBA7D]/30 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-[#2DBA7D] uppercase">
-                      Proyeksi SHU Bersih
-                    </span>
-                    <Sparkles className="w-4 h-4 text-[#2DBA7D]" />
-                  </div>
-                  <p className="text-3xl font-bold text-[#2DBA7D]">
-                    Rp {simNetShuProfit.toLocaleString("id-ID")}
-                  </p>
-                  <p className="text-[11px] text-[#2DBA7D]/80">
-                    Akumulasi margin selama {simTenorMonths} bulan
-                  </p>
-                </div>
-              </div>
-
-              {/* Breakdown Cashflow Card */}
-              <div className="bg-white p-6 rounded-[20px] border border-[#E6E3F7] shadow-sm space-y-4">
-                <h4 className="font-bold text-xs text-[#1C1B3A] uppercase tracking-wider">
-                  Rincian Arus Kas & Angsuran Bulanan
-                </h4>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-                  <div className="p-3.5 rounded-[14px] bg-[#FAFAFC] border border-[#E6E3F7] space-y-1">
-                    <span className="text-[11px] text-[#6F6B88]">Cicilan Anggota / Bulan</span>
-                    <p className="text-base font-bold text-[#1C1B3A]">
-                      Rp {simMonthlyMemberInstallment.toLocaleString("id-ID")}
-                    </p>
-                    <span className="text-[10px] text-[#2DBA7D]">Potong Gaji Autodebet</span>
-                  </div>
-
-                  <div className="p-3.5 rounded-[14px] bg-[#FAFAFC] border border-[#E6E3F7] space-y-1">
-                    <span className="text-[11px] text-[#6F6B88]">Setor ke Bank / Bulan</span>
-                    <p className="text-base font-bold text-[#D97706]">
-                      Rp {simMonthlyBankObligation.toLocaleString("id-ID")}
-                    </p>
-                    <span className="text-[10px] text-[#6F6B88]">Pokok + Bunga Wholesale</span>
-                  </div>
-
-                  <div className="p-3.5 rounded-[14px] bg-[#F5F3FF] border border-[#E6E3F7] space-y-1">
-                    <span className="text-[11px] text-[#4A3AFF]">Keuntungan SHU / Bulan</span>
-                    <p className="text-base font-bold text-[#4A3AFF]">
-                      Rp {Math.round(simNetShuProfit / simTenorMonths).toLocaleString("id-ID")}
-                    </p>
-                    <span className="text-[10px] text-[#4A3AFF]">Net Cashflow Bersih</span>
-                  </div>
-                </div>
-
-                <div className="border-t border-[#E6E3F7] pt-3 text-xs space-y-2 text-[#6F6B88]">
-                  <div className="flex justify-between">
-                    <span>Total Bunga Diterima dari Anggota:</span>
-                    <span className="font-bold text-[#1C1B3A]">Rp {simTotalCoopIncome.toLocaleString("id-ID")}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Total Beban Bunga Disetor ke Bank:</span>
-                    <span className="font-bold text-[#D97706]">- Rp {simTotalBankCost.toLocaleString("id-ID")}</span>
-                  </div>
-                  <div className="flex justify-between font-bold text-[#1C1B3A] pt-1 border-t border-dashed border-[#E6E3F7]">
-                    <span>Total Net Margin Koperasi (SHU):</span>
-                    <span className="text-[#2DBA7D]">Rp {simNetShuProfit.toLocaleString("id-ID")}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 8. SUB-TAB 6: JADWAL ANGSURAN & REKONSILIASI */}
+      {/* 5. SUB-TAB 5: JADWAL ANGSURAN & REKONSILIASI */}
       {activeTab === "repayments" && (
         <div className="space-y-6">
           <div className="bg-white p-6 rounded-[20px] border border-[#E6E3F7] shadow-sm">
